@@ -5,7 +5,8 @@ Created on Fri Nov 23 10:00:22 2018
 
 @author: andreas
 
-Create an miRNA input file for ncOrtho
+Create an miRNA input file for ncOrtho (from miRBase input data)
+TODO: include both mature sequences (-5p and -3p) if available
 """
 
 import argparse
