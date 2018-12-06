@@ -3,6 +3,7 @@
 '''
 
 #import
+from __future__ import print_function
 import argparse
 import subprocess
 import sys
@@ -20,7 +21,12 @@ class Mirna(object):
         self.chromosome = chromosome
         self.start = start
         self.stop = stop
+        self.strand = strand
         print('You created a new miRNA object.')
+
+def mirna_maker(chromosome, start, stop, strand):
+    new_mirna = Mirna(chromosome, start, stop, strand)
+    return new_mirna
 
 def cmsearch_parser(cms):
     cmsdict = {}
@@ -40,6 +46,7 @@ def blast_search(c, r, o):
     subprocess.call(blast_command, shell=True)
     return blast_output
 
+#def main(ext_args=None):
 def main():
     #Define global variables
     #cpu
@@ -47,27 +54,39 @@ def main():
     #input
     #genome of interest
     #covariance model
+    #type of input ncrna, defaul mirna
     #pre-mirna
     #mature mirna
     #coordinates
     #input from text file?
     #parse input parameters
     parser = argparse.ArgumentParser()
-    #parser.add_argument('-o', metavar='str', nargs='1')
+    #parser.add_argument('-o', metavar='str', nargs='1', required=True, default='.')
+    #...
     cm = False
     output = ''
     mirnas = ''
     query = ''
     msl = 1.0
     mpi = 0
+    
+    """
+    if len(sys.argv) == 1 and not ext_args:
+        parser.print_help()
+        sys.exit(1)
+    elif ext_args:
+        args = parser.parse_args(ext_args)
+    else:
+        args = parser.parse_args()
+    """
 
-    test = Mirna('chr7',1,10)
-    test.information()
+    test = Mirna('chr7',1,10,'+')
+    #test.information()
 ######## perform covariance model search ###########
     
     cms_output = ''
     cms_command = ''
-    subprocess.call(cms_command, shell=True)
+    #subprocess.call(cms_command, shell=True)
     cm_results = cmsearch_parser(cms_output)
     
     accepted_hits = []

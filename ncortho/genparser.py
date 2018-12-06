@@ -4,6 +4,7 @@ Extract miRNA sequence from query genome according to cmsearch coordinates
 
 #import Bio
 #from Bio import SeqIO
+#import pyfaidx
 
 class GenomeParser():
     

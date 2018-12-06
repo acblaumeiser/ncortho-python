@@ -1,6 +1,5 @@
 #Test suite to test the functionality of ncOrtho
 
-from unittest import 
+import unittest
 
-test main
-test mirna class
+from ncortho import blastparser
