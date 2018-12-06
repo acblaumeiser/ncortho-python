@@ -3,30 +3,39 @@
 '''
 
 #import
+#Python
 from __future__ import print_function
 import argparse
 import subprocess
 import sys
 
 #import ncOrtho specific modules
-#import blast_parser
 from blastparser import BlastParser
 from coreset import CoreSet
 from createcm import CmConstructor
 from genparser import GenomeParser
 
 class Mirna(object):
-    #def __init__(self, chromosome, start, stop, strand, pre, mature):
-    def __init__(self, chromosome, start, stop, strand):
-        self.chromosome = chromosome
-        self.start = start
-        self.stop = stop
-        self.strand = strand
-        print('You created a new miRNA object.')
+#central class of microRNA objects
+    def __init__(self, name, chromosome, start, end, strand, pre, mature):
+        self.name = name #miRNA identifier
+        self.chromosome = chromosome #chromosome that the miRNA is located on
+        self.start = start #start position of the pre-miRNA
+        self.end = end #end position of the pre-miRNA
+        self.strand = strand #sense or anti-sense strand
+        self.pre = pre #nucleotide sequence of the pre-miRNA
+        self.mature = mature #nucleotide sequence of the mature miRNA
+        #print('You created a new miRNA object.')
 
-def mirna_maker(chromosome, start, stop, strand):
-    new_mirna = Mirna(chromosome, start, stop, strand)
-    return new_mirna
+def mirna_maker(mirnas):
+    mmdict = {}
+    with open(mirnas) as mirna_file:
+        mirna_data = [line.strip().split() for line in mirna_file if not line.startswith('#')]
+        print(mirna_data)
+    for mirna in mirna_data:
+        #mmdict[mirna[0]] = Mirna(mirna[0], mirna[1], mirna[2], mirna[3], mirna[4], mirna[5], mirna[6])
+        mmdict[mirna[0]] = Mirna(*mirna)
+    return mmdict
 
 def cmsearch_parser(cms):
     cmsdict = {}
@@ -78,29 +87,36 @@ def main():
     #args = parser.parse_args()
     
     #models = args.models
-    models = '/media/andreas/Data/ncOrtho/sample_data/covariance_models'
+    models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/covariance_models'
     #output = args.output
-    output = '/media/andreas/Data/ncOrtho/sample_data/output'
+    output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
     #mirnas = args.mirnas
-    mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
+    mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
     #reference = args
-    reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
+    reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
     #query = args.query
-    query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
+    query = '/share/project/andreas/miRNA_project/genomes/NEW/alpaca/Vicugna_pacos.vicPac1.dna.toplevel.fa'
     #msl = args.msl
     msl = 1.0
     #mpi = args.mpi
     mpi = 0
     #cpu = args.cpu
     cpu = 4
+
+    ######
     
-    test = Mirna('chr7',1,10,'+')
+    mirna_dict = mirna_maker(mirnas)
+    #print(mirna_dict)
+
     #test.information()
 ######## perform covariance model search ###########
-    
-    cms_output = ''
-    cms_command = ''
-    #subprocess.call(cms_command, shell=True)
+    for mirna in mirna_dict:
+        mirna_id = mirna_dict[mirna].name
+        cms_output = '{}/cmsearch_{}.out'.format(output, mirna_id)
+        print(cms_output)
+        cms_command = 'cmsearch -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query)
+#system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
+    subprocess.call(cms_command, shell=True)
     #cm_results = cmsearch_parser(cms_output)
     
     accepted_hits = []

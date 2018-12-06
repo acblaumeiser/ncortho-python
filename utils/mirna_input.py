@@ -56,7 +56,7 @@ def gtf_parser(gtf, pd, md):
 #write miRNA data into tab separated output file    
 def output_writer(out, out_dict):
     with open(out, 'w') as outfile:
-        header = '\t'.join(['#miRNA', 'chromosome', 'start', 'stop', 'strand', 'pre_seq', 'mat_seq-5p', 'mat_seq-3p']) + '\n'
+        header = '\t'.join(['#miRNA', 'chromosome', 'start', 'end', 'strand', 'pre_seq', 'mat_seq-5p', 'mat_seq-3p']) + '\n'
         outfile.write(header)
         for mirna in out_dict:
                 lineout = '\t'.join(out_dict[mirna]) + '\n'

@@ -12,10 +12,4 @@ class CovarianceModel(object):
         None
         self.taxa = 'rat, hamster'
     def core_set(self):
-        return self.taxa
-
-def construct_cm():
-    cm = CovarianceModel()
-    print cm.core_set()
-    
-construct_cm()
+        return None
