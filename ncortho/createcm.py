@@ -10,6 +10,7 @@ class CmConstructor(object):
     
     def construct(self):
         construct_command = ''
+        ### cmbuild -n name of the cm
         subprocess.call(construct_command, shell=True)
         return None
     

@@ -6,15 +6,17 @@
 #Python
 from __future__ import print_function
 import argparse
+import multiprocessing
+import os
 import subprocess
 import sys
 #import multiprocessing
 
 #import ncOrtho specific modules
 from blastparser import BlastParser
-from coreset import CoreSet
-from createcm import CmConstructor
 from genparser import GenomeParser
+#from coreset import CoreSet
+#from createcm import CmConstructor
 
 class Mirna(object):
 #central class of microRNA objects
@@ -76,6 +78,11 @@ def main():
     #coordinates
     #input from text file?
     #parse input parameters
+    #os.getcwd()
+    #os.chdir(path)
+    #os.path.exists(path)
+    #os.path.isfile(path)
+    #os.path.isdir(path)
     parser = argparse.ArgumentParser()
     #parser.add_argument('-o', metavar='str', nargs='1', required=True, default='.')
     #...
@@ -108,6 +115,9 @@ def main():
     #mpi = args.mpi
     mpi = 0
     #cpu = args.cpu
+    ### check if computer provides the desired number of cores
+    ### in Python 2 or 3 multiprocessing.cpu_count()
+    ### or os.cpu_count() in Python 3
     cpu = 4
 
     ###### create miRNA objects #####
@@ -119,7 +129,7 @@ def main():
     
     for mirna in mirna_dict:
         mirna_id = mirna_dict[mirna].name
-        cms_output = '{}/cmsearch_{}.out'.format(output, mirna_id)
+        cms_output = '{0}/cmsearch_{1}.out'.format(output, mirna_id)
         print(cms_output)
         cms_command = 'cmsearch -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query)
         print(cms_command)
