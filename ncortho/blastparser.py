@@ -1,7 +1,7 @@
 #Parse the output of a BLAST search and filter the relevant hits
 
 #import Bio
-from __future__ import print_function
+#from __future__ import print_function
 #import genparser
 #import ncortho
 
