@@ -34,16 +34,27 @@ def mirna_maker(mirnas):
     mmdict = {}
     with open(mirnas) as mirna_file:
         mirna_data = [line.strip().split() for line in mirna_file if not line.startswith('#')]
-        print(mirna_data)
+        #print(mirna_data)
     for mirna in mirna_data:
-        print(mirna)
+        #print(mirna)
         #mmdict[mirna[0]] = Mirna(mirna[0], mirna[1], mirna[2], mirna[3], mirna[4], mirna[5], mirna[6])
         mmdict[mirna[0]] = Mirna(*mirna)
     return mmdict
 
 def cmsearch_parser(cms):
-    cmsdict = {}
-    return cmsdict
+    with open(cms) as cmsfile:
+        hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
+        hits_dict = {}
+        for i, hit in enumerate(hits):
+            #print(i)
+            #data = (name, chromosome, start, end, strand)
+            data = ('mir-1_c{0}'.format(i+1), hit[0], hit[7], hit[8], hit[9])
+            hits_dict[i+1] = data
+        #cmsdict = {}
+        return hits_dict
+
+#['GeneScaffold_587', '-', 'rna_aln', '-', 'cm', '1', '77', '73402', '73326', '-', 'no', '1', '0.31', '0.0', '77.3', '8.3e-16', '!', 'dna:genescaffold', 'genescaffold:vicPac1:GeneScaffold_587:1:293948:1', 'REF']
+
 
 #c: cmsearch result
 #r: reference genome
@@ -104,8 +115,8 @@ def main():
     #output = args.output
     output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
     #mirnas = args.mirnas
-    #mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
-    mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
+    mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
+    #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
     #reference = args
     reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
     #query = args.query
@@ -118,7 +129,7 @@ def main():
     ### check if computer provides the desired number of cores
     ### in Python 2 or 3 multiprocessing.cpu_count()
     ### or os.cpu_count() in Python 3
-    cpu = 4
+    cpu = 32
 
     ###### create miRNA objects #####
     
@@ -129,14 +140,22 @@ def main():
     
     for mirna in mirna_dict:
         mirna_id = mirna_dict[mirna].name
+        #print(output)
         cms_output = '{0}/cmsearch_{1}.out'.format(output, mirna_id)
-        print(cms_output)
-        cms_command = 'cmsearch -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query)
-        print(cms_command)
-        cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
+        #print(cms_output)
+        infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
+        cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
+        #print(cms_command)
+        #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
+        cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
-    #subprocess.call(cms_command, shell=True)
+    subprocess.call(cms_command, shell=True)
     cm_results = cmsearch_parser(cms_output)
+    print(cm_results)
+    gp = GenomeParser(query, cm_results.values())
+    print(gp.hitlist)
+    results = gp.extract_sequences()
+    print(results)
     
     
 
