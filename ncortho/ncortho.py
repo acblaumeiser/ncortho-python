@@ -144,18 +144,22 @@ def main():
         cms_output = '{0}/cmsearch_{1}.out'.format(output, mirna_id)
         #print(cms_output)
         infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
-        cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
+        #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
+        cms_command = '{5} -E 0.01 --cpu {0} --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
         #print(cms_command)
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
-    subprocess.call(cms_command, shell=True)
+    #subprocess.call(cms_command, shell=True)
     cm_results = cmsearch_parser(cms_output)
     print(cm_results)
     gp = GenomeParser(query, cm_results.values())
     print(gp.hitlist)
     results = gp.extract_sequences()
     print(results)
+    for sequ in results.values():
+        print(sequ)
+        print(len(sequ))
     
     
 

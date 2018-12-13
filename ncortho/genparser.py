@@ -23,9 +23,9 @@ class GenomeParser():
         for hit in self.hitlist:
             print('')
             if hit[4] == '+':
-                seq = self.gene_dict[hit[1]][int(hit[2]):int(hit[3])].seq
+                seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
             elif hit[4] == '-':
-                seq = seq = self.gene_dict[hit[1]][int(hit[2]):int(hit[3])].reverse.seq
+                seq = self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])].reverse.complement.seq
             seq_dict[hit[0]] = seq
         return seq_dict
         #identify required chromosomes
