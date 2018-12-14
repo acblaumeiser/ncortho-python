@@ -5,7 +5,7 @@ Extract miRNA sequence from query genome according to cmsearch coordinates
 #import Bio
 #from Bio import SeqIO
 import pyfaidx
-from pyfaidx import Fasta
+#from pyfaidx import Fasta
 
 class GenomeParser():
     
@@ -66,5 +66,5 @@ VII    -         rna_aln              -          cm        1       77   526072  
     #genome_parser.sort_hits()
     #genome_parser.extract_sequence()
     
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

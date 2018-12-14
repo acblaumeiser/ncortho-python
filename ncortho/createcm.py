@@ -1,4 +1,4 @@
-#Construct a covariance model for a given ncRNA core set
+#Construct a covariance model for a given ncRNA core set alignment in Stockholm format
 
 #import RNA
 import subprocess
@@ -32,7 +32,7 @@ def main():
     test_cc.construct()
     test_cc.calibrate()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 
 

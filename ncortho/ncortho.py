@@ -2,8 +2,9 @@
 #Re-implementation of ncOrtho in Python
 '''
 
-#import
-#Python
+###modules import
+
+###Python
 #from __future__ import print_function
 import argparse
 import multiprocessing
@@ -12,11 +13,17 @@ import subprocess
 import sys
 #import multiprocessing
 
-#import ncOrtho specific modules
+###External
+#import pyfaidx
+#import RNA
+
+###ncOrtho internal modules
 from blastparser import BlastParser
 from genparser import GenomeParser
 #from coreset import CoreSet
 #from createcm import CmConstructor
+
+###############################################################################
 
 class Mirna(object):
 #central class of microRNA objects
@@ -30,6 +37,7 @@ class Mirna(object):
         self.mature = mature #nucleotide sequence of the mature miRNA
         #print('You created a new miRNA object.')
 
+#mirnas path to file with microRNA data
 def mirna_maker(mirnas):
     mmdict = {}
     with open(mirnas) as mirna_file:
@@ -41,17 +49,25 @@ def mirna_maker(mirnas):
         mmdict[mirna[0]] = Mirna(*mirna)
     return mmdict
 
-def cmsearch_parser(cms):
+#cms path to cmsearch output
+#cmc cutoff to decide which candidate hits should be included for the reverse BLAST search
+#mn name/id of the microRNA
+def cmsearch_parser(cms, cmc, mn):
+    hits_dict = {}
     with open(cms) as cmsfile:
         hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
-        hits_dict = {}
-        for i, hit in enumerate(hits):
-            #print(i)
-            #data = (name, chromosome, start, end, strand)
-            data = ('mir-1_c{0}'.format(i+1), hit[0], hit[7], hit[8], hit[9])
-            hits_dict[i+1] = data
+        if hits:
+            top_score = float(hits[0][14])
+            cut_off = top_score * cmc
+            #hits_dict = {}
+            for i, hit in enumerate(hits):
+                bit_score = float(hit[14])
+                if bit_score >= cut_off:
+                    #data = (name, chromosome, start, end, strand)
+                    data = ('{0}_c{1}'.format(mn, i+1), hit[0], hit[7], hit[8], hit[9])
+                    hits_dict[i+1] = data
         #cmsdict = {}
-        return hits_dict
+    return hits_dict
 
 #['GeneScaffold_587', '-', 'rna_aln', '-', 'cm', '1', '77', '73402', '73326', '-', 'no', '1', '0.31', '0.0', '77.3', '8.3e-16', '!', 'dna:genescaffold', 'genescaffold:vicPac1:GeneScaffold_587:1:293948:1', 'REF']
 
@@ -76,7 +92,8 @@ def write_output(a, o):
 #def main(ext_args=None):
 def main():
     
-    ##### parse command line arguments #####
+##### parse command line arguments #####
+
     #Define global variables
     #cpu
     #output
@@ -94,7 +111,7 @@ def main():
     #os.path.exists(path)
     #os.path.isfile(path)
     #os.path.isdir(path)
-    parser = argparse.ArgumentParser()
+    #parser = argparse.ArgumentParser()
     #parser.add_argument('-o', metavar='str', nargs='1', required=True, default='.')
     #...
     
@@ -109,73 +126,103 @@ def main():
     """
     
     #args = parser.parse_args()
-    
     #models = args.models
-    models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/covariance_models'
     #output = args.output
-    output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
     #mirnas = args.mirnas
-    mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
-    #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
     #reference = args
-    reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
     #query = args.query
-    query = '/share/project/andreas/miRNA_project/genomes/NEW/alpaca/Vicugna_pacos.vicPac1.dna.toplevel.fa'
     #msl = args.msl
-    msl = 1.0
     #mpi = args.mpi
-    mpi = 0
-    #cpu = args.cpu
+    
     ### check if computer provides the desired number of cores
     ### in Python 2 or 3 multiprocessing.cpu_count()
     ### or os.cpu_count() in Python 3
-    cpu = 32
-
-    ###### create miRNA objects #####
+    #cpu = args.cpu
+    
+    #blast_cutoff = args.blastc
+    #cm_cutoff = args.cmc
+    
+    ### default values for testing purposes
+    msl = 0.9
+    mpi = 0
+    blast_cutoff = 0.8
+    cm_cutoff = 0.8
+    cpu = os.cpu_count()
+    
+    #place = 'ak'
+    place = 'pc'
+    
+    if place == 'ak':
+        mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
+        models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/covariance_models'
+        output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
+        query = '/share/project/andreas/miRNA_project/genomes/NEW/alpaca/Vicugna_pacos.vicPac1.dna.toplevel.fa'
+        reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
+        
+    elif place == 'pc':
+        #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mmu-mir-669a-1.txt'
+        mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
+        models = '/media/andreas/Data/ncOrtho/sample_data/covariance_models'
+        output = '/media/andreas/Data/ncOrtho/sample_data/output'
+        query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
+        #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
+        reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
+    
+###### create miRNA objects #####
     
     mirna_dict = mirna_maker(mirnas)
     #print(mirna_dict)
 
-######## perform covariance model search ###########
+##### identify candidate orthologs #####
     
     for mirna in mirna_dict:
+        
+        ##### perform covariance model search #####
+
         mirna_id = mirna_dict[mirna].name
         #print(output)
         cms_output = '{0}/cmsearch_{1}.out'.format(output, mirna_id)
         #print(cms_output)
-        infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
+        #infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
+
+        ### original Perl command
+        #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
         #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
-        cms_command = '{5} -E 0.01 --cpu {0} --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
+        cms_command = 'cmsearch -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query)
         #print(cms_command)
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
-        cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
-#system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
-    #subprocess.call(cms_command, shell=True)
-    cm_results = cmsearch_parser(cms_output)
-    print(cm_results)
-    gp = GenomeParser(query, cm_results.values())
-    print(gp.hitlist)
-    results = gp.extract_sequences()
-    print(results)
-    for sequ in results.values():
-        print(sequ)
-        print(len(sequ))
-    
-    
+        #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-##### perform reverse blast test #####
+        #subprocess.call(cms_command, shell=True)
+        cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
+        #print(cm_results)
+        
+        ##### extract sequences for candidate hits #####
+        
+        if not cm_results:
+            print('No hits for {}.'.format(mirna_id))
+            continue
     
-    #accepted_hits = []
+        else:
+            gp = GenomeParser(query, cm_results.values())
+        #print(gp.hitlist)
+            candidates = gp.extract_sequences()
+            print(candidates)        
+        
+        ##### perform reverse blast test #####
+        
+        accepted_hits = []
     
-    #for cmr in cm_results:
-        #blast_results = blast_search(cmr, r, o)
-        #bp = BlastParser(None,None,None,None,None)
-        #bp.parse_blast_output()
-        #if bp.accepted:
-            #accepted_hits.append('')
-
-##### write output file #####            
-    #write_output(accepted_hits, o)
+        for candidate in candidates:
+            sequence = candidates[candidate]
+            blast_results = blast_search(sequence, r, o)
+            bp = BlastParser(None,None,None,None,None)
+            bp.parse_blast_output()
+            if bp.accepted:
+                accepted_hits.append('')
+        
+        ##### write output file #####
+        #write_output(accepted_hits, o)
     
 if __name__ == "__main__":
     main()
