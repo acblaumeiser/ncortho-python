@@ -58,13 +58,14 @@ class BlastParser(object):
             ### add a check for the presence of the mature miRNA
 
 def main():
-    default_cutoff = 0.8
-    default_msl = 0.9
-    test_mirna = Mirna('2',180389048,180389124,'+','ATCG')
-    samplepath = '/media/andreas/Data/ncOrtho/sample_data/reciproc_blast1.out'
-    
-    bp = BlastParser(test_mirna, samplepath, default_msl)
-    bp.parse_blast_output()
+    None
+#    default_cutoff = 0.8
+#    default_msl = 0.9
+#    test_mirna = Mirna('2',180389048,180389124,'+','ATCG')
+#    samplepath = '/media/andreas/Data/ncOrtho/sample_data/reciproc_blast1.out'
+#    
+#    bp = BlastParser(test_mirna, samplepath, default_msl)
+#    bp.parse_blast_output()
     
 if __name__ == '__main__':
     main()

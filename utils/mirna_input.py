@@ -39,7 +39,7 @@ def gtf_parser(gtf, pd, md):
                                        try:
                                            matseq = str(md[matname].seq)
                                        except:
-                                           print 'Sequence for {} not found.'.format(matname)
+                                           print('Sequence for {} not found.'.format(matname))
                                            continue
                                        if '-3p' in matname:
                                            try:
@@ -64,10 +64,10 @@ def output_writer(out, out_dict):
     
 def main():
     parser = argparse.ArgumentParser()
-    pre = '/media/andreas/Data/ncOrtho/data/example/mouse/mmu_hairpin.fa'
-    mat = '/media/andreas/Data/ncOrtho/data/example/mouse/mmu_mature.fa'
-    gtf = '/media/andreas/Data/ncOrtho/data/example/mouse/mmu.gff3'
-    out = '/media/andreas/Data/ncOrtho/data/example/mmu_mirna.tsv'
+    pre = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_high_conf_hairpin.fa'
+    mat = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_high_conf_mature.fa'
+    gtf = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu.gff3'
+    out = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_mirna.tsv'
     pre_dict = fasta_parser(pre)
     mat_dict = fasta_parser(mat)
     out_dict = gtf_parser(gtf, pre_dict, mat_dict)

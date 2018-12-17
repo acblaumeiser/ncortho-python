@@ -11,7 +11,6 @@ import multiprocessing
 import os
 import subprocess
 import sys
-#import multiprocessing
 
 ###External
 #import pyfaidx
@@ -32,7 +31,7 @@ class Mirna(object):
         self.chromosome = chromosome #chromosome that the miRNA is located on
         self.start = start #start position of the pre-miRNA
         self.end = end #end position of the pre-miRNA
-        self.strand = strand #sense or anti-sense strand
+        self.strand = strand #sense (+) or anti-sense (-) strand
         self.pre = pre #nucleotide sequence of the pre-miRNA
         self.mature = mature #nucleotide sequence of the mature miRNA
         #print('You created a new miRNA object.')
@@ -72,14 +71,15 @@ def cmsearch_parser(cms, cmc, mn):
 #['GeneScaffold_587', '-', 'rna_aln', '-', 'cm', '1', '77', '73402', '73326', '-', 'no', '1', '0.31', '0.0', '77.3', '8.3e-16', '!', 'dna:genescaffold', 'genescaffold:vicPac1:GeneScaffold_587:1:293948:1', 'REF']
 
 
-#c: cmsearch result
+#s: cmsearch result
 #r: reference genome
 #o: output name
-def blast_search(c, r, o):
-    blast_output = ''
-    blast_command = ''
+#c: number of threads
+def blast_search(s, r, o, c):
+    #blast_output = ''
+    blast_command = 'blastn -task blastn -db {0} -query {1} -out {2} -num_threads {3} -outfmt 6'.format(r, s, o, c)
     subprocess.call(blast_command, shell=True)
-    return blast_output
+    #return blast_output
 
 #a: list of accepted hits
 #o: path for output
@@ -215,11 +215,15 @@ def main():
     
         for candidate in candidates:
             sequence = candidates[candidate]
-            blast_results = blast_search(sequence, r, o)
-            bp = BlastParser(None,None,None,None,None)
+            temp_fasta = '{0}/{1}.fa'.format(output, candidate)
+            with open(temp_fasta, 'w') as tempfile:
+                tempfile.write('>{0}\n{1}'.format(candidate, sequence))
+            blast_output = '{0}/blast_{1}.out'.format(output, candidate)
+            blast_search(temp_fasta, reference, blast_output, cpu)
+            bp = BlastParser(mirna_dict[mirna], blast_output, msl)
             bp.parse_blast_output()
-            if bp.accepted:
-                accepted_hits.append('')
+            #if bp.accepted:
+                #accepted_hits.append('')
         
         ##### write output file #####
         #write_output(accepted_hits, o)
