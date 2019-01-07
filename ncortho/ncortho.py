@@ -34,6 +34,7 @@ class Mirna(object):
         self.strand = strand #sense (+) or anti-sense (-) strand
         self.pre = pre #nucleotide sequence of the pre-miRNA
         self.mature = mature #nucleotide sequence of the mature miRNA
+        #self.star = star #opposite mature sequence, can be functional as well
         #print('You created a new miRNA object.')
 
 #mirnas path to file with microRNA data
@@ -76,6 +77,19 @@ def cmsearch_parser(cms, cmc, mn):
 #o: output name
 #c: number of threads
 def blast_search(s, r, o, c):
+    ### check if BLAST database exists, otherwise create it
+    ### database files are .nhr, .nin, .nsq
+    ### existence of a file can be checked via os.path.isfile(path)
+    file_extensions = ['.nhr', '.nin', '.nsq']
+    for fe in file_extensions:
+        checkpath = '{}{}'.format(r, fe)
+        if not os.path.isfile(checkpath): #at least one of the BLAST db files is not existent and has to be created
+            db_command = 'makeblastdb -in {} -dbtype nucl'.format(r)
+            print(checkpath)
+            print(db_command)
+            subprocess.call(db_command, shell=True)
+            break
+            
     #blast_output = ''
     blast_command = 'blastn -task blastn -db {0} -query {1} -out {2} -num_threads {3} -outfmt 6'.format(r, s, o, c)
     subprocess.call(blast_command, shell=True)
@@ -166,7 +180,8 @@ def main():
         output = '/media/andreas/Data/ncOrtho/sample_data/output'
         query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
         #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
-        reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
+        #reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
+        reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/genome/Mus_musculus.chromosomes.fa'
     
 ###### create miRNA objects #####
     

@@ -53,6 +53,7 @@ class BlastParser(object):
                     #second within first
                     print("yeah")
                     print(blasthit)
+            
             ### TODO: calculate length of overlap to see if it is relevant/significant
             ### also the bit score should be compared
             ### add a check for the presence of the mature miRNA

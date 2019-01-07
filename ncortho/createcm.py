@@ -1,9 +1,15 @@
 #Construct a covariance model for a given ncRNA core set alignment in Stockholm format
 
+#Python imports
 #import RNA
+import argparse
 import subprocess
 
+#ncOrtho imports
+from coreset import CoreSet
+
 class CmConstructor(object):
+    
     def __init__(self, alignment, outpath, name, cpu):
         self.alignment = alignment
         self.outpath = outpath
@@ -24,13 +30,24 @@ class CmConstructor(object):
         #return None
 
 def main():
+    parser = argparse.ArgumentParser()
+    #args = parser.parse_args()
+    #alignment = args.alignment
+    #output = args.output
+    #cput = args.cpu
+    
+    #if not alignment:
+        #create core set
+        #None
+        #test_coreset = CoreSet()
+    
     test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/rna_aln.sto'
     test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
     test_name = 'mir-1'
-    test_cpu = 32
+    test_cpu = 4
     test_cc = CmConstructor(test_alignment, test_outpath, test_name, test_cpu)
-    test_cc.construct()
-    test_cc.calibrate()
+    #test_cc.construct()
+    #test_cc.calibrate()
 
 if __name__ == '__main__':
     main()
