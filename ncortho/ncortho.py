@@ -112,12 +112,12 @@ def main():
     parser = argparse.ArgumentParser(prog='python arguments.py', description='ncRNA orthology prediction tool')
     #cpu
     parser.add_argument('-c', '--cpu', metavar='int', type=int, help='number of cpu cores ncOrtho should use')
-    #output
-    parser.add_argument('-o', '--output', metavar='<path>', type=str, help='path for the output folder')
     #covariance models
     parser.add_argument('-m', '--models', metavar='<path>', type=str, help='path to your covariance models')
     #mirna
     parser.add_argument('-n', '--ncrna', metavar='<path>', type=str, help='path to your reference micrornas')
+    #output
+    parser.add_argument('-o', '--output', metavar='<path>', type=str, help='path for the output folder')
     #query
     parser.add_argument('-q', '--query', metavar='<.fa>', type=str, help='path to your genome of interest')
     #reference
@@ -187,7 +187,7 @@ def main():
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-        subprocess.call(cms_command, shell=True)
+        #subprocess.call(cms_command, shell=True)
         cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
         #print(cm_results)
         
