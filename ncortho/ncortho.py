@@ -109,25 +109,48 @@ def main():
 ##### parse command line arguments #####
 
     #Define global variables
+    parser = argparse.ArgumentParser(prog='python arguments.py', description='ncRNA orthology prediction tool')
     #cpu
+    parser.add_argument('-c', '--cpu', metavar='int', type=int, help='number of cpu cores ncOrtho should use')
     #output
-    #input
-    #genome of interest
-    #covariance model
-    #type of input ncrna, defaul mirna
-    #pre-mirna
-    #mature mirna
-    #coordinates
-    #input from text file?
-    #parse input parameters
+    parser.add_argument('-o', '--output', metavar='<path>', type=str, help='path for the output folder')
+    #covariance models
+    parser.add_argument('-m', '--models', metavar='<path>', type=str, help='path to your covariance models')
+    #mirna
+    parser.add_argument('-n', '--ncrna', metavar='<path>', type=str, help='path to your reference micrornas')
+    #query
+    parser.add_argument('-q', '--query', metavar='<.fa>', type=str, help='path to your genome of interest')
+    #reference
+    parser.add_argument('-r', '--reference', metavar='<.fa>', type=str, help='path to your reference genome')
+
+    args = parser.parse_args()
     #os.getcwd()
     #os.chdir(path)
     #os.path.exists(path)
     #os.path.isfile(path)
     #os.path.isdir(path)
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument('-o', metavar='str', nargs='1', required=True, default='.')
-    #...
+
+    #cpu = args.cpu        
+    ### check if computer provides the desired number of cores
+    ### in Python 2 or 3 multiprocessing.cpu_count()
+    ### or os.cpu_count() in Python 3
+
+    cpu = os.cpu_count()
+    mirnas = args.ncrna
+    models = args.models
+    output = args.output
+    query = args.query
+    reference = args.reference
+    
+    ### default values for testing purposes
+    #blast_cutoff = args.blastc
+    #cm_cutoff = args.cmc
+    #mpi = args.mpi
+    #msl = args.msl
+    blast_cutoff = 0.8
+    cm_cutoff = 0.8
+    mpi = 0
+    msl = 0.9
     
     """
     if len(sys.argv) == 1 and not ext_args:
@@ -138,51 +161,7 @@ def main():
     else:
         args = parser.parse_args()
     """
-    
-    #args = parser.parse_args()
-    #models = args.models
-    #output = args.output
-    #mirnas = args.mirnas
-    #reference = args
-    #query = args.query
-    #msl = args.msl
-    #mpi = args.mpi
-    
-    ### check if computer provides the desired number of cores
-    ### in Python 2 or 3 multiprocessing.cpu_count()
-    ### or os.cpu_count() in Python 3
-    #cpu = args.cpu
-    
-    #blast_cutoff = args.blastc
-    #cm_cutoff = args.cmc
-    
-    ### default values for testing purposes
-    msl = 0.9
-    mpi = 0
-    blast_cutoff = 0.8
-    cm_cutoff = 0.8
-    cpu = os.cpu_count()
-    
-    #place = 'ak'
-    place = 'pc'
-    
-    if place == 'ak':
-        mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
-        models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/covariance_models'
-        output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
-        query = '/share/project/andreas/miRNA_project/genomes/NEW/alpaca/Vicugna_pacos.vicPac1.dna.toplevel.fa'
-        reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
         
-    elif place == 'pc':
-        #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mmu-mir-669a-1.txt'
-        mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
-        models = '/media/andreas/Data/ncOrtho/sample_data/covariance_models'
-        output = '/media/andreas/Data/ncOrtho/sample_data/output'
-        query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
-        #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
-        #reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
-        reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/genome/Mus_musculus.chromosomes.fa'
-    
 ###### create miRNA objects #####
     
     mirna_dict = mirna_maker(mirnas)
@@ -208,7 +187,7 @@ def main():
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-        #subprocess.call(cms_command, shell=True)
+        subprocess.call(cms_command, shell=True)
         cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
         #print(cm_results)
         
