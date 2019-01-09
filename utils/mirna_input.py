@@ -63,16 +63,32 @@ def output_writer(out, out_dict):
                 outfile.write(lineout)
     
 def main():
-    parser = argparse.ArgumentParser()
-    pre = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_high_conf_hairpin.fa'
-    mat = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_high_conf_mature.fa'
-    gtf = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu.gff3'
-    out = '/media/andreas/Data/ncOrtho/sample_data/example/mouse/mmu_mirna.tsv'
+    #Define global variables
+    parser = argparse.ArgumentParser(prog='python mirna_input.py', description='tool to produce ncRNA input data files for ncOrtho')
+    #GTF file from miRBase
+    parser.add_argument('-g', '--gtf', metavar='<.gtf>', type=str, help='path to GTF file')
+    #mature sequences
+    parser.add_argument('-m', '--mature', metavar='<.fa>', type=str, help='path to mature miRNA sequences')
+    #output
+    parser.add_argument('-o', '--output', metavar='<path>', type=str, help='path for the output file')
+    #precursor sequences
+    parser.add_argument('-p', '--pre', metavar='<.fa>', type=str, help='path to pre-miRNA sequences')
+    
+    args = parser.parse_args()
+    
+    gtf = args.gtf
+    mat = args.mature
+    out = args.out
+    pre = args.pre
+    
+    #Pre-computations
     pre_dict = fasta_parser(pre)
     mat_dict = fasta_parser(mat)
+    #Output computation
     out_dict = gtf_parser(gtf, pre_dict, mat_dict)
     del pre_dict
     del mat_dict
+    #Output writing
     output_writer(out, out_dict)
     
 if __name__ == "__main__":

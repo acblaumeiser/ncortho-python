@@ -4,7 +4,7 @@
 
 
 #required:
-#reference microRNA
+#reference microRNA data (sequence, coordinates)
 #reference taxon: genome, blastdb, gtf file with gene coordinates
 #core set taxa: genome, gtf file, pairwise orthologs
 
