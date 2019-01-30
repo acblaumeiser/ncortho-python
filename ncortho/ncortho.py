@@ -26,24 +26,59 @@ from genparser import GenomeParser
 
 class Mirna(object):
 #central class of microRNA objects
-    def __init__(self, name, chromosome, start, end, strand, pre, mature):
+    def __init__(self, name, chromosome, start, end, strand, pre, mature, bit):
         self.name = name #miRNA identifier
         self.chromosome = chromosome #chromosome that the miRNA is located on
-        self.start = start #start position of the pre-miRNA
-        self.end = end #end position of the pre-miRNA
+        self.start = int(start) #start position of the pre-miRNA
+        self.end = int(end) #end position of the pre-miRNA
         self.strand = strand #sense (+) or anti-sense (-) strand
         self.pre = pre #nucleotide sequence of the pre-miRNA
         self.mature = mature #nucleotide sequence of the mature miRNA
+        self.bit = bit #reference bit score that miRNA receives by its own covariance model
         #self.star = star #opposite mature sequence, can be functional as well
         #print('You created a new miRNA object.')
 
-#mirnas path to file with microRNA data
-def mirna_maker(mirnas):
-    mmdict = {}
-    with open(mirnas) as mirna_file:
+#mirpath: path to file with microRNA data
+#modelpath: path to covariance models
+#output: outpath for temporary files
+def mirna_maker(mirpath, cmpath, output):
+    
+    mmdict = {} #will be the return value
+    
+    with open(mirpath) as mirna_file:
         mirna_data = [line.strip().split() for line in mirna_file if not line.startswith('#')]
         #print(mirna_data)
     for mirna in mirna_data:
+        # obtain the reference bit score for each miRNA by applying it to its own covariance model        
+        mirid = mirna[0]
+        seq = mirna[5]
+        query = '{0}/{1}/{1}.fa'.format(output, mirid)
+        model = '{0}/{1}.cm'.format(cmpath, mirid)
+        #print(query)
+        # check if the covariance model even exists, otherwise skip to the next miRNA
+        if not os.path.isfile(model):
+            print('No covariance model found for {}.'.format(mirid))
+            continue
+        
+        # create a temporary FASTA file with the miRNA sequence as query for cmsearch
+        with open(query, 'w') as tmpfile:
+            tmpfile.write('>{0}\n{1}'.format(mirid, seq))
+
+        cms_output = '{0}/{1}/cmsearch_{1}_tmp.out'.format(output, mirid)
+        cms_log = '{0}/{1}/cmsearch_{1}.log'.format(output, mirid)
+        cms_command = 'cmsearch -E 0.01 --noali -o {3} --tblout {0} {1} {2}'.format(cms_output, model, query, cms_log)
+        subprocess.call(cms_command, shell=True)
+        with open(cms_output) as cmsfile:
+            hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
+            top_score = float(hits[0][14])
+
+        mirna.append(top_score)
+        rmv_cms = 'rm {}'.format(cms_output)
+        rmv_log = 'rm {}'.format(cms_log)
+        rmv_fa = 'rm {}'.format(query)
+        subprocess.call(rmv_cms, shell=True)
+        subprocess.call(rmv_log, shell=True)
+        subprocess.call(rmv_fa, shell=True)
         #print(mirna)
         #mmdict[mirna[0]] = Mirna(mirna[0], mirna[1], mirna[2], mirna[3], mirna[4], mirna[5], mirna[6])
         mmdict[mirna[0]] = Mirna(*mirna)
@@ -95,13 +130,12 @@ def blast_search(s, r, o, c):
     subprocess.call(blast_command, shell=True)
     #return blast_output
 
-#a: list of accepted hits
+#a: dictionary of accepted hits
 #o: path for output
 def write_output(a, o):
     with open(o, 'w') as outfile:
         for hit in a:
-            modified_hit = hit.split()
-            outfile.write(modified_hit)
+            outfile.write('>{0}\n{1}\n'.format(hit, a[hit]))
 
 #def main(ext_args=None):
 def main():
@@ -164,25 +198,34 @@ def main():
         
 ###### create miRNA objects #####
     
-    mirna_dict = mirna_maker(mirnas)
+    mirna_dict = mirna_maker(mirnas, models, output)
     #print(mirna_dict)
 
 ##### identify candidate orthologs #####
     
-    for mirna in mirna_dict:
+    for mir_data in mirna_dict:
         
         ##### perform covariance model search #####
 
-        mirna_id = mirna_dict[mirna].name
-        #print(output)
-        cms_output = '{0}/cmsearch_{1}.out'.format(output, mirna_id)
+        mirna = mirna_dict[mir_data]
+        mirna_id = mirna.name
+        outdir = '{}/{}'.format(output, mirna_id)
+        if not os.path.isdir(outdir):
+            subprocess.call('mkdir {}'.format(outdir), shell=True)
+        print('\n### Running cmsearch for {}. ###\n'.format(mirna_id))
+        cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
+        cut_off = mirna.bit*0.9
+        #print(cut_off)
         #print(cms_output)
         #infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
 
         ### original Perl command
         #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
         #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
-        cms_command = 'cmsearch -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query)
+        cms_command = 'cmsearch -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off)
+        
+        #### Remember to include -incT value to limit accepted hits by bit score filter, use reference bit score
+        
         #print(cms_command)
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
@@ -194,33 +237,48 @@ def main():
         ##### extract sequences for candidate hits #####
         
         if not cm_results:
-            print('No hits for {}.'.format(mirna_id))
+            print('\n### No hits found for {}. ###\n'.format(mirna_id))
             continue
     
         else:
             gp = GenomeParser(query, cm_results.values())
         #print(gp.hitlist)
             candidates = gp.extract_sequences()
-            print(candidates)        
+            #print(candidates)
+            #if len(candidates) == 1:
+                #print('\n### Search successful, found 1 candidate ortholog. ###\n')
+            #else:
+            print('\n### Covariance model search successful, found {} ortholog candidate(s). ###\n'.format(len(candidates)))
+            
+            print('### Evaluating candidates. ###\n')        
         
         ##### perform reverse blast test #####
         
-        accepted_hits = []
+        #accepted_hits = []
     
         for candidate in candidates:
             sequence = candidates[candidate]
-            temp_fasta = '{0}/{1}.fa'.format(output, candidate)
+            temp_fasta = '{0}/{1}.fa'.format(outdir, candidate)
             with open(temp_fasta, 'w') as tempfile:
                 tempfile.write('>{0}\n{1}'.format(candidate, sequence))
-            blast_output = '{0}/blast_{1}.out'.format(output, candidate)
+            blast_output = '{0}/blast_{1}.out'.format(outdir, candidate)
             blast_search(temp_fasta, reference, blast_output, cpu)
-            bp = BlastParser(mirna_dict[mirna], blast_output, msl)
-            bp.parse_blast_output()
+            bp = BlastParser(mirna, blast_output, msl)
+            #print(bp)
+            if not bp.parse_blast_output():
+                #accepted_hits.append(candidate)
+                del candidates[candidate]
+                
             #if bp.accepted:
                 #accepted_hits.append('')
-        
+        #print(accepted_hits)
         ##### write output file #####
-        #write_output(accepted_hits, o)
-    
+        if candidates:
+            print('### Writing output of accepted candidates. ###\n')
+            outpath = '{0}/{1}_orthologs.fa'.format(outdir, mirna_id)
+            write_output(candidates, outpath)
+        else:
+            print('None of the candidates could be verified for {}.\n'.format(mirna_id))
+        print('### Finished ortholog search for {}. ###'.format(mirna_id))
 if __name__ == "__main__":
     main()

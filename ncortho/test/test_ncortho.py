@@ -25,15 +25,21 @@ if place == 'ak':
 elif place == 'pc':
     cpu = '4'
     #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mmu-mir-669a-1.txt'
-    mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
+    #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mmu_mirna.tsv'
+    #mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas.txt'
+    mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mirnas_test.txt'
     models = '/media/andreas/Data/ncOrtho/sample_data/covariance_models'
     ncortho = '/media/andreas/Data/ncOrtho/ncortho-python/ncortho/ncortho.py'
     output = '/media/andreas/Data/ncOrtho/sample_data/output'
+    #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/pseudo_genome_for_testing_purposes/pseudo_yeast.fa'
+    #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/pseudo_genome_for_testing_purposes/pseudo_genome_negative.fa'
+    query = '/media/andreas/Data/ncOrtho/sample_data/genomes/pseudo_genome_for_testing_purposes/pseudo_genome_positive.fa'
     #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
-    query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
+    #query = '/media/andreas/Data/ncOrtho/sample_data/genomes/Vicugna_pacos.vicPac1.dna.toplevel.fa'
     #reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/Mus_musculus.GRCm38.dna_rm.primary_assembly.fa'
     reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/genome/Mus_musculus.chromosomes.fa'
         
 nc_command = 'python {0} -c {1} -m {2} -n {3} -o {4} -q {5} -r {6}'.format(ncortho, cpu, models, mirnas, output, query, reference)
 #print(nc_command)
 subprocess.call(nc_command, shell=True)
+

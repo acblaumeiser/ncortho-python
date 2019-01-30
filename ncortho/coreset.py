@@ -69,10 +69,10 @@ def ortho_search(r_gene):
         try:
             ortholog = ortho_dict[core_taxon][r_gene]
                         #print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-            print '{0} is the ortholog for {1} in {2}.'.format(ortholog, ref_dict[chromo][gene][0], core_taxon)
+            print('{0} is the ortholog for {1} in {2}.'.format(ortholog, ref_dict[chromo][gene][0], core_taxon))
         except:
                         #print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-            print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][gene][0], core_taxon)
+            print('No ortholog for {0} found in {1}.'.format(ref_dict[chromo][gene][0], core_taxon))
 
 #omapaths = ['/home/andreas/Documents/Internship/M.musculus_root/cm_retry/oma/I.tridecemlineatus']
 omapaths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/oma/*.*')
@@ -111,7 +111,7 @@ with open(ref_gtf, 'rb') as tmpfile:
 
 for mirna in mirnas:
     mirid = mirna[0]
-    print '### {0} ###'.format(mirid)
+    print('### {0} ###'.format(mirid))
     if 'chr' in mirna[1]:
         chromo = mirna[1].split('chr')[1]
     else:
@@ -125,13 +125,13 @@ for mirna in mirnas:
 
 ### case 1): there is no protein-coding gene on the same contig as the miRNA, so there can be no neighbors (should only occur in highly fragmented assemblies)
     if not chromo in ref_dict.keys():
-        print 'There are no protein-coding genes on contig {0}. Synteny around {1} cannot be established.'.format(chromo, mirid)
+        print('There are no protein-coding genes on contig {0}. Synteny around {1} cannot be established.'.format(chromo, mirid))
         continue
 
 ### case 2): miRNA is located left of the first gene and hence has no left neighbor, the first gene is therefore by default the right neighbor
     if end < int(ref_dict[chromo][1][1]):
-        print 'There is no left neighbor of {0}, since it is located at the start of contig {1}.'.format(mirid, chromo)
-        print '{0} is the right neighbor of {1}.'.format(ref_dict[chromo][1][0], mirid)
+        print('There is no left neighbor of {0}, since it is located at the start of contig {1}.'.format(mirid, chromo))
+        print('{0} is the right neighbor of {1}.'.format(ref_dict[chromo][1][0], mirid))
         continue
         #found_left = False
 
@@ -139,8 +139,8 @@ for mirna in mirnas:
 
     elif start > int(ref_dict[chromo][len(ref_dict[chromo])][2]):
         #found_left = True
-        print '{0} is the left neighbor of {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], mirid)
-        print 'There is no right neighbor of {0}, since it is located at the end of contig {1}.'.format(mirid, chromo)
+        print('{0} is the left neighbor of {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], mirid))
+        print('There is no right neighbor of {0}, since it is located at the end of contig {1}.'.format(mirid, chromo))
         continue
 
 ### case 4): miRNA is located either between two genes or inside (an intron of) a gene
@@ -152,9 +152,9 @@ for mirna in mirnas:
             ### case 4.1): miRNA inside gene
             if start >= gene_data[1] and end <= gene_data[2] and strand == gene_data[3]:
                 c+=1
-                print '{0} is located inside the gene {1}.'.format(mirid, gene_data[0])
-                print mirna[:5]
-                print gene_data
+                print('{0} is located inside the gene {1}.'.format(mirid, gene_data[0]))
+                print(mirna[:5])
+                print(gene_data)
                 ortho_search(gene_data[0])
                 #for core_taxon in ortho_dict.keys():
                 #    try:
@@ -168,7 +168,7 @@ for mirna in mirnas:
                 continue
             elif int(ref_dict[chromo][gene][2]) < start and ref_dict[chromo][gene+1][1] > end:
                 left = gene
-                print '{1} is the left neighbor of {2}.'.format(gene, ref_dict[chromo][gene][0], mirid)
+                print('{1} is the left neighbor of {2}.'.format(gene, ref_dict[chromo][gene][0], mirid))
                 ortho_search(gene_data[0])
                 #for core_taxon in ortho_dict.keys():
                 #    try:
@@ -199,10 +199,7 @@ for mirna in mirnas:
         #print 'No left neighbor for {0}, how about right?'.format(mirid)
 
 #    print ref_dict[chromo]
-#print ortho_dict
-print c
     
-
 class CoreSet:
     def __init__(self):
         None
