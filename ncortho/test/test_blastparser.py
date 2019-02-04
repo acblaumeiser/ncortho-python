@@ -1,5 +1,5 @@
 import unittest
-import blastparser
+from ... import blastparser
 
 class Mirna(object):
 #just for testing purposes, should be inside ncortho main script

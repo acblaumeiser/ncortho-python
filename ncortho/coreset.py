@@ -10,15 +10,18 @@
 
 
 import glob
-import cPickle as pickle
+import pickle
+#import cPickle as pickle
 
-core = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
-ref_gtf = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/ref_gtf'
+#core = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
+#ref_gtf = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/ref_gtf'
 #core = glob.glob('/home/andreas/Documents/Internship/M.musculus_root/cm_retry/core/gtf/*.gtf')
 #mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mirnas.txt'
-mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
+#mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
+mirpath = '/media/andreas/Data/ncOrtho/sample_data/core_test/mirnas/pseudo_mirnas_testing.txt'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/reference.gtf'
-reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
+#reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
+reference = '/media/andreas/Data/ncOrtho/sample_data/core_test/gtf/pseudo_ref_genes.gtf'
 
 #query = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/query.gtf'
 
@@ -102,12 +105,12 @@ with open(mirpath) as mirfile:
 ### mir-1	chr1	51	100	+	GCTTGGGACACATACTTCTTTATATGCCCATATGAACCTGCTAAGCTATGGAATGTAAAGAAGTATGTATTTCAGGC	TGGAATGTAAAGAAGTATGTAT
 ### chr1	sgd	gene	1	50	.	+	.	gene_id "gene1";
 
-#ref_dict = gtf_parser(reference)
+ref_dict = gtf_parser(reference)
 #with open(ref_gtf, 'wb') as outfile:
 #    pickle.dump(ref_dict, outfile, protocol=2)
 
-with open(ref_gtf, 'rb') as tmpfile:
-    ref_dict = pickle.load(tmpfile)
+#with open(ref_gtf, 'rb') as tmpfile:
+#    ref_dict = pickle.load(tmpfile)
 
 for mirna in mirnas:
     mirid = mirna[0]
@@ -167,8 +170,9 @@ for mirna in mirnas:
                     #    print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][gene][0], core_taxon)
                 continue
             elif int(ref_dict[chromo][gene][2]) < start and ref_dict[chromo][gene+1][1] > end:
-                left = gene
+                #left = gene
                 print('{1} is the left neighbor of {2}.'.format(gene, ref_dict[chromo][gene][0], mirid))
+                print('{1} is the right neighbor of {2}.'.format(gene, ref_dict[chromo][gene+1][0], mirid))
                 ortho_search(gene_data[0])
                 #for core_taxon in ortho_dict.keys():
                 #    try:
