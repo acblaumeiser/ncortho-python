@@ -8,11 +8,13 @@ Created on Thu Dec  6 12:45:13 2018
 
 #import unittest
 import subprocess
+import sys
 
 #different start parameters depending on whether running on own pc or workstation
 #place = 'ak'
-place = 'pc'
-    
+#place = 'pc'
+place = sys.argv[1] 
+   
 if place == 'ak':
     cpu = '4'
     mirnas = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas.txt'
