@@ -34,9 +34,10 @@ class Mirna(object):
         self.strand = strand #sense (+) or anti-sense (-) strand
         self.pre = pre #nucleotide sequence of the pre-miRNA
         self.mature = mature #nucleotide sequence of the mature miRNA
-        self.bit = bit #reference bit score that miRNA receives by its own covariance model
         #self.star = star #opposite mature sequence, can be functional as well
-        #print('You created a new miRNA object.')
+        #self.mature_5p = mature_5p #nucleotide sequence of the 5p mature miRNA
+        #self.mature_3p = mature_3p #nucleotide sequence of the 3p mature miRNA
+        self.bit = bit #reference bit score that miRNA receives by its own covariance model
 
 #mirpath: path to file with microRNA data
 #modelpath: path to covariance models
@@ -89,20 +90,68 @@ def mirna_maker(mirpath, cmpath, output):
 #mn name/id of the microRNA
 def cmsearch_parser(cms, cmc, mn):
     hits_dict = {}
+    chromo_dict = {}
     with open(cms) as cmsfile:
         hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
         if hits:
-            top_score = float(hits[0][14])
-            cut_off = top_score * cmc
+            #top_score = float(hits[0][14])
+            #cut_off = top_score * cmc
+            cut_off = cmc
             #hits_dict = {}
             for i, hit in enumerate(hits):
+                #print(hit)
                 bit_score = float(hit[14])
                 if bit_score >= cut_off:
                     #data = (name, chromosome, start, end, strand)
-                    data = ('{0}_c{1}'.format(mn, i+1), hit[0], hit[7], hit[8], hit[9])
-                    hits_dict[i+1] = data
-        #cmsdict = {}
+                    data = ('{0}_c{1}'.format(mn, i+1), hit[0], hit[7], hit[8], hit[9], hit[14])
+                    #print(data)
+                    #hits_dict[i+1] = data
+                    hits_dict[data[0]] = data
+#Store the hits that satisfy the bit score cutoff to filter duplicates           
+                    try:
+                        chromo_dict[data[1]].append(data)
+                    except:
+                        #None
+                        chromo_dict[data[1]] = [data]
+
+                #i += 1
+    #print(chromo_dict)
+    #return hits_dict
+#Loop over the candidate hits to eliminate duplicates
+
+#'ultracontig62': [('mmu-mir-15b_c2', 'ultracontig62', '2169252', '2169306', '+', '49.8'), ('mmu-mir-15b_c3', 'ultracontig62', '2169306', '2169252', '-', '41.5')]
+    print(hits_dict)
+    for chromo in chromo_dict:
+                nrhits = len(chromo_dict[chromo])
+                if nrhits > 1:
+                    for hitnr in range(nrhits):
+                        start = int(chromo_dict[chromo][hitnr][2])
+                        stop = int(chromo_dict[chromo][hitnr][3])
+                        strand = chromo_dict[chromo][hitnr][4]
+                        score = float(chromo_dict[chromo][hitnr][5])
+                        for chitnr in range(hitnr+1, nrhits):
+                            if strand != chromo_dict[chromo][chitnr][4]:
+                                cstart = int(chromo_dict[chromo][chitnr][2])
+                                cstop = int(chromo_dict[chromo][chitnr][3])
+                                cscore = float(chromo_dict[chromo][chitnr][5])
+    #Test if the two hits from opposite strands overlap, which means one of them is (probably) a false positive
+    #Out of two conflicting hits, the one with the highest cmsearch score is retained
+                                if start in range(cstart, cstop+1) or stop in range(cstart, cstop+1) or cstart in range(start, stop+1) or cstop in range(start, stop+1):
+                                    if score > cscore:
+                                        try:
+                                            del hits_dict[chromo_dict[chromo][chitnr][0]]
+                                        except:
+                                            print(taxon, mirid)
+                                            c += 1
+                                    else:
+                                        try:
+                                            del hits_dict[chromo_dict[chromo][hitnr][0]]
+                                        except:
+                                            print(taxon, mirid)
+                                            c += 1
+
     return hits_dict
+######################
 
 #['GeneScaffold_587', '-', 'rna_aln', '-', 'cm', '1', '77', '73402', '73326', '-', 'no', '1', '0.31', '0.0', '77.3', '8.3e-16', '!', 'dna:genescaffold', 'genescaffold:vicPac1:GeneScaffold_587:1:293948:1', 'REF']
 
@@ -169,7 +218,8 @@ def main():
     ### in Python 2 or 3 multiprocessing.cpu_count()
     ### or os.cpu_count() in Python 3
 
-    cpu = os.cpu_count()
+    #cpu = os.cpu_count()
+    cpu = args.cpu
     mirnas = args.ncrna
     models = args.models
     output = args.output
@@ -182,8 +232,8 @@ def main():
     #mpi = args.mpi
     #msl = args.msl
     blast_cutoff = 0.8
-    cm_cutoff = 0.8
-    mpi = 0
+    cm_cutoff = 0.5
+    #mpi = 0
     msl = 0.9
     
     """
@@ -196,7 +246,7 @@ def main():
         args = parser.parse_args()
     """
         
-###### create miRNA objects #####
+##### create miRNA objects from the list of input miRNAs #####
     
     mirna_dict = mirna_maker(mirnas, models, output)
     #print(mirna_dict)
@@ -214,7 +264,8 @@ def main():
             subprocess.call('mkdir {}'.format(outdir), shell=True)
         print('\n### Running cmsearch for {}. ###\n'.format(mirna_id))
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
-        cut_off = mirna.bit*0.9
+        #cut_off = mirna.bit*0.9
+        cut_off = mirna.bit*cm_cutoff
         #print(cut_off)
         #print(cms_output)
         #infernal = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'

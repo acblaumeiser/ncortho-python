@@ -12,34 +12,38 @@
 import glob
 import pickle
 import genparser
-#import pyfaidx
+import pyfaidx
 #import cPickle as pickle
 
 #core = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
 ref_gtf_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/ref_gtf'
 #core_gtf = glob.glob('/home/andreas/Documents/Internship/M.musculus_root/cm_retry/core/gtf/*.gtf')
-core_gtf_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
-core_fa_paths = glob.glob('/share/project/andreas/miRNA_project/mouse_core_genomes/*.fa')
-#mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mirnas.txt'
-#mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
-#mirpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mirnas/test_mirnas.txt'
-mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas_test_set.tsv'
+#core_gtf_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
+core_gtf_paths = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core'
+core_fa_paths = '/share/project/andreas/miRNA_project/mouse_core_genomes'
+mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas_test_set.tsv'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/reference.gtf'
 reference_path = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
 #reference = '/media/andreas/Data/ncOrtho/sample_data/core_test/gtf/pseudo_ref_genes.gtf'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/pseudo_ref_genes.gtf'
 oma_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/oma/*')
+out_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/output'
 c=0
 
-def gtf_parser(corespecies):
-    species = corespecies.split('/')[-1].split('.')[0]
-    print(species)
-    gen_dict = {}
+mirna_dict = {}
+neighbor_dict = {}
+
+# Parse a GTF file to store the coordinates for each protein-coding gene in a dictionary
+def gtf_parser(species):
+    species_name = species.split('/')[-1].split('.')[0]
+    #print(species)
+    #gen_dict = {}
     chr_dict = {}
     chromo = ''
 
     #with open(inpath) as infile, open(outpath, 'wb') as outfile:
-    with open(corespecies) as infile:
+    with open(species) as infile:
         for line in infile:
             if not line.startswith('#') and line.split()[2] == 'gene' and line.split('gene_biotype')[1].split('\"')[1] == 'protein_coding':
                 linedata = line.strip().split('\t')
@@ -53,7 +57,8 @@ def gtf_parser(corespecies):
                 if contig != chromo:
                     i = 1
                     chromo = contig
-                gen_dict[geneid] = (contig, i)
+                #gen_dict[geneid] = (contig, i)
+                chr_dict[geneid] = (contig, i)
                 try:
                     chr_dict[contig][i] = (geneid, start, end, strand)
                 except:
@@ -66,17 +71,18 @@ def gtf_parser(corespecies):
     return chr_dict
 
 def ortho_search(r_gene):
+    #print(r_gene)
     orthologs = {}
     for core_taxon in ortho_dict.keys():
         try:
             ortholog = ortho_dict[core_taxon][r_gene]
             orthologs[core_taxon] = ortholog
                         #print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-            print('{0} is the ortholog for {1} in {2}.'.format(ortholog, ref_dict[chromo][gene][0], core_taxon))
+            print('{0} is the ortholog for {1} in {2}.'.format(ortholog, r_gene, core_taxon))
             
         except:
                         #print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-            print('No ortholog found for {0} in {1}.'.format(ref_dict[chromo][gene][0], core_taxon))
+            print('No ortholog found for {0} in {1}.'.format(r_gene, core_taxon))
     return orthologs
     #print(ortho_dict)
     #print(orthologs)
@@ -87,13 +93,14 @@ def fasta_parser(taxon, chromosome, start, end, strand):
     seq = ''
     return seq
 
-reference_gtf = gtf_parser(reference_path)
+#reference_gtf = gtf_parser(reference_path)
 #if not reference in core_gtf:
 #    core_gtf.append(reference)
 #data_dict = gtf_parser(core_gtf)
 
 ortho_dict = {}
 
+#Parse the pairwise orthologs
 for oma_path in oma_paths:
     taxon = oma_path.split('/')[-1]
     with open(oma_path) as omafile:
@@ -104,28 +111,22 @@ for oma_path in oma_paths:
         orthologs = {ref: core for (ref, core) in [(line.split()[0], line.split()[1]) for line in omafile.readlines()]}
         ortho_dict[taxon] = orthologs
 
-#print len(orthologs)
-#print ortho_dict.keys()
-
-#d = {key: value for (key, value) in iterable}
-
-
-with open(mirpath) as mirfile:
+#Read in the miRNA data
+with open(mirna_path) as mirfile:
     mirnas = [line.split() for line in mirfile.readlines() if not line.startswith('#')]
     #print mirnas
 
 ### mir-1	chr1	51	100	+	GCTTGGGACACATACTTCTTTATATGCCCATATGAACCTGCTAAGCTATGGAATGTAAAGAAGTATGTATTTCAGGC	TGGAATGTAAAGAAGTATGTAT
 ### chr1	sgd	gene	1	50	.	+	.	gene_id "gene1";
 
-ref_dict = gtf_parser(reference)
+#ref_dict = gtf_parser(reference_path)
 #with open(ref_gtf, 'wb') as outfile:
 #    pickle.dump(ref_dict, outfile, protocol=2)
 
-#with open(ref_gtf, 'rb') as tmpfile:
-#    ref_dict = pickle.load(tmpfile)
+with open(ref_gtf_path, 'rb') as tmpfile:
+    ref_dict = pickle.load(tmpfile)
 
-
-
+#Determine the position of each miRNA and its neighboring gene(s)
 for mirna in mirnas:
     mirid = mirna[0]
     print('### {0} ###'.format(mirid))
@@ -150,94 +151,126 @@ for mirna in mirnas:
         print('There is no left neighbor of {0}, since it is located at the start of contig {1}.'.format(mirid, chromo))
         print('{0} is the right neighbor of {1}.'.format(ref_dict[chromo][1][0], mirid))
         continue
-        #found_left = False
 
 ### case 3): miRNA is located right to the last gene, so the last gene is the left neighbor and there cannot be a right neighbor
     elif start > int(ref_dict[chromo][len(ref_dict[chromo])][2]):
-        #found_left = True
         print('{0} is the left neighbor of {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], mirid))
         print('There is no right neighbor of {0}, since it is located at the end of contig {1}.'.format(mirid, chromo))
         continue
 
-### case 4): miRNA is located either between two genes or inside (an intron of) a gene
+### case 4): miRNA is located either between two genes or overlapping with (an intron of) a gene, either on the same or the opposite strand
     else:
         solved = False
         for i, gene in enumerate(ref_dict[chromo]):
             gene_data = ref_dict[chromo][gene]
-            #print gene_data
             ### case 4.1): miRNA inside gene
             if start >= gene_data[1] and end <= gene_data[2] and strand == gene_data[3]:
                 solved = True
                 c+=1
                 print('{0} is located inside the gene {1}.'.format(mirid, gene_data[0]))
-                #print(mirna[:5])
-                #print(gene_data)
-                #try:
-                #sequences = {}    
                 ortho_hits = ortho_search(gene_data[0])
-                ortho_dict[mirid] = ortho_hits
-                #for core_taxon in ortho_dict.keys():
-                #    try:
-                        #print 'Do you even try?'
-                 #       left_ortholog = ortho_dict[core_taxon][ref_dict[chromo][len(ref_dict[chromo])][0]]
-                        #print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-                  #      print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][gene][0], core_taxon)
-                   # except:
-                        #print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-                    #    print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][gene][0], core_taxon)
+                for core_tax in ortho_hits:
+                    try:
+                        neighbor_dict[core_tax][mirid] = ('inside', ortho_hits[core_tax])
+                    except:
+                        neighbor_dict[core_tax] = {mirid: ('inside', ortho_hits[core_tax])}
                 break
             elif start >= gene_data[1] and end <= gene_data[2] and strand != gene_data[3]:
                 solved = True
                 c+=1
                 print('{0} is located opposite of the gene {1}.'.format(mirid, gene_data[0]))
                 ortho_hits = ortho_search(gene_data[0])
-                ortho_dict[mirid] = ortho_hits
-                #print(mirna[:5])
-                #print(gene_data)
+                for core_tax in ortho_hits:
+                    try:
+                        neighbor_dict[core_tax][mirid] = ('opposite', ortho_hits[core_tax])
+                    except:
+                        neighbor_dict[core_tax] = {mirid: ('opposite', ortho_hits[core_tax])}
                 break
             elif int(ref_dict[chromo][gene][2]) < start and ref_dict[chromo][gene+1][1] > end:
                 solved = True
                 #left = gene
                 print('{1} is the left neighbor of {2}.'.format(gene, ref_dict[chromo][gene][0], mirid))
                 print('{1} is the right neighbor of {2}.'.format(gene, ref_dict[chromo][gene+1][0], mirid))
-                break
-                #ortho_search(gene_data[0])
-                #for core_taxon in ortho_dict.keys():
-                #    try:
-                        #print 'Do you even try?'
-                 #       left_ortholog = ortho_dict[core_taxon][ref_dict[chromo][len(ref_dict[chromo])][0]]
-                        #print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-                  #      print '{0} is the ortholog for {1} in {2}.'.format(left_ortholog, ref_dict[chromo][gene][0], core_taxon)
-                   # except:
-                        #print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][len(ref_dict[chromo])][0], core_taxon)
-                    #    print 'No ortholog for {0} found in {1}.'.format(ref_dict[chromo][gene][0], core_taxon)
+                #print(gene_data[0])
+                #print(ref_dict[chromo][gene+1][0])
+                left_hits = ortho_search(gene_data[0])
+                right_hits = ortho_search(ref_dict[chromo][gene+1][0])
+                #save only the hits where both genes have orthologs in a species
+                if left_hits:
+                    for taxon in left_hits:
+                        if taxon in right_hits:
+                            try:
+                                neighbor_dict[taxon][mirid] = ('in-between', [left_hits[taxon], right_hits[taxon]])
+                            except:
+                                neighbor_dict[taxon] = {mirid: ('in-between', [left_hits[taxon], right_hits[taxon]])}
+                break                
+
         if not solved:
             print('Unable to resolve synteny for {}.'.format(mirid))
 
-### find right neighbor (easy if left neighbor is known)
-#1798, ENSMUSG00000101445 is the left neighbor of mmu-mir-1a-1.
-    #if found_left:
-     #   try:
-      #      right = ref_dict[chromo][left+1][0]
-       #     print '{1} is the right neighbor of {2}.'.format(left+1, ref_dict[chromo][left+1][0], mirid)
-        #except:
-         #   print 'No right neighbor for {0}.'.format(mirid)
- #   else:
-#        print ref_dict[chromo]
- #       print chromo
-    #    if end < ref_dict[chromo][1][1]:
-     #       print '{0} is the right neighbor of {1}.'.format(ref_dict[chromo][1][0], mirid)
-            
-        #print 'No left neighbor for {0}, how about right?'.format(mirid)
+#print(neighbor_dict)
 
-#print ref_dict['19']
+### Search for the coordinates of the orthologs and extract the sequences
+for taxon in neighbor_dict:
+    gtf_path = '{0}/{1}.gtf'.format(core_gtf_paths, taxon)
+    fasta_path = glob.glob('{0}/{1}*.fa'.format(core_fa_paths, taxon))
+    #print(fasta_path)
+    #print(fasta_path)
+    if len(fasta_path) != 1:
+        print('Unable to identify genome file for {}'.format(taxon))
+        continue
+    genome = pyfaidx.Fasta(fasta_path[0])
+    print('Trying to parse GTF file for {}.'.format(taxon))
+    try:
+        core_gtf_dict = gtf_parser(gtf_path)
+        #print('Parsed GTF file successfully for {}.'.format(taxon))
+        print(neighbor_dict[taxon])
+        for mirna in neighbor_dict[taxon]:
+            style = neighbor_dict[taxon][mirna][0]
+            #print(style)
+            if style == 'inside' or style == 'opposite':
+                #print(style)
+                try:
+                    ortho_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
+                    #print(ortho_data)
+                    #print(core_gtf_dict[ortho_data[0]][ortho_data[1]])
+                    positions = list(core_gtf_dict[ortho_data[0]][ortho_data[1]][1:4])
+                    #print(positions)
+                    coordinates = [ortho_data[0]] + positions
+                    #print(coordinates)
+                    seq = genome[coordinates[0]][coordinates[1]-1:coordinates[2]].seq
+                    #if coordinates[3] == '+':
+                    #    seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
+                    #elif coordinates[3] == '-':
+                    #    seq = self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])].reverse.complement.seq
 
-print(ortho_dict)
+                    #print(seq)
+                    try:
+                        mirna_dict[mirna][taxon] = seq
+                    except:
+                        mirna_dict[mirna] = {taxon: seq}
+                    #print(core_gtf_dict[neighbor_dict[taxon][mirna][1]])
+                except:
+                    print('{} not found in GTF file.'.format(mirna[1]))
+            elif style == 'in-between':
+                left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
+                right_data = core_gtf_dict[neighbor_dict[taxon][mirna][2]]
+                #print(core_gtf_dict[neighbor_dict[taxon][mirna]])
+#                print(left_data)
+#                print(right_data)
+                #print(neighbor_dict[taxon][mirna])
+                ### test if the two orthologs are also neighbors
+                ### take the end position of the one and the start position of the other to extract sequence
+    except:
+        #print('No GTF file found for {}'.format(taxon))
+        continue
 
-class CoreSet:
-    def __init__(self):
-        None
-
+for mirna in mirna_dict:
+    with open('{0}/{1}.fa'.format(out_path, mirna), 'w') as outfile:
+        for core_taxon in mirna_dict[mirna]:
+            outfile.write('>{0}\n{1}\n'.format(core_taxon, mirna_dict[mirna][core_taxon]))
+    
+#print(mirna_dict)
 #def main():
 #    print('coreset')
     
