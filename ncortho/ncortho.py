@@ -40,7 +40,7 @@ class Mirna(object):
         self.bit = bit #reference bit score that miRNA receives by its own covariance model
 
 #mirpath: path to file with microRNA data
-#modelpath: path to covariance models
+#cmpath: path to covariance models
 #output: outpath for temporary files
 def mirna_maker(mirpath, cmpath, output):
     
@@ -120,7 +120,7 @@ def cmsearch_parser(cms, cmc, mn):
 #Loop over the candidate hits to eliminate duplicates
 
 #'ultracontig62': [('mmu-mir-15b_c2', 'ultracontig62', '2169252', '2169306', '+', '49.8'), ('mmu-mir-15b_c3', 'ultracontig62', '2169306', '2169252', '-', '41.5')]
-    print(hits_dict)
+    #print(hits_dict)
     for chromo in chromo_dict:
                 nrhits = len(chromo_dict[chromo])
                 if nrhits > 1:
@@ -329,7 +329,7 @@ def main():
             outpath = '{0}/{1}_orthologs.fa'.format(outdir, mirna_id)
             write_output(candidates, outpath)
         else:
-            print('None of the candidates could be verified for {}.\n'.format(mirna_id))
+            print('None of the candidates for {} could be verified.\n'.format(mirna_id))
         print('### Finished ortholog search for {}. ###'.format(mirna_id))
 if __name__ == "__main__":
     main()
