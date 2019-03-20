@@ -18,8 +18,7 @@ class BlastParser(object):
         self.msl = msl
         self.top_score = 100
         #self.top_score = blasthits[0][6]
-    def __call__(self):
-        print('So?')
+
     def parse_blast_output(self,):
         
         with open(self.blastpath) as blastfile:

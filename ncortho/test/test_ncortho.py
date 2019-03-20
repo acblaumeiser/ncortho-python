@@ -44,4 +44,3 @@ elif place == 'pc':
 nc_command = 'python {0} -c {1} -m {2} -n {3} -o {4} -q {5} -r {6}'.format(ncortho, cpu, models, mirnas, output, query, reference)
 #print(nc_command)
 subprocess.call(nc_command, shell=True)
-

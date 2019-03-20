@@ -9,7 +9,7 @@
 import argparse
 import multiprocessing
 import os
-import subprocess
+import subprocess as sp
 import sys
 
 ###External
@@ -24,8 +24,8 @@ from genparser import GenomeParser
 
 ###############################################################################
 
-class Mirna(object):
 #central class of microRNA objects
+class Mirna(object):
     def __init__(self, name, chromosome, start, end, strand, pre, mature, bit):
         self.name = name #miRNA identifier
         self.chromosome = chromosome #chromosome that the miRNA is located on
@@ -50,8 +50,17 @@ def mirna_maker(mirpath, cmpath, output):
         mirna_data = [line.strip().split() for line in mirna_file if not line.startswith('#')]
         #print(mirna_data)
     for mirna in mirna_data:
-        # obtain the reference bit score for each miRNA by applying it to its own covariance model        
         mirid = mirna[0]
+        # check if the output folder exists, otherwise create it
+        if not os.path.isdir('{}/{}'.format(output, mirid)):
+            try:
+                mkdir = 'mkdir {}/{}'.format(output, mirid)
+                sp.call(mkdir, shell=True)
+            except:
+                print('Cannot create output folder for {}. Skipping to next miRNA.')
+                continue
+        # obtain the reference bit score for each miRNA by applying it to its own covariance model
+        print('Calculating reference bit score for {}.'.format(mirid))
         seq = mirna[5]
         query = '{0}/{1}/{1}.fa'.format(output, mirid)
         model = '{0}/{1}.cm'.format(cmpath, mirid)
@@ -68,18 +77,22 @@ def mirna_maker(mirpath, cmpath, output):
         cms_output = '{0}/{1}/cmsearch_{1}_tmp.out'.format(output, mirid)
         cms_log = '{0}/{1}/cmsearch_{1}.log'.format(output, mirid)
         cms_command = 'cmsearch -E 0.01 --noali -o {3} --tblout {0} {1} {2}'.format(cms_output, model, query, cms_log)
-        subprocess.call(cms_command, shell=True)
+        sp.call(cms_command, shell=True)
         with open(cms_output) as cmsfile:
             hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
-            top_score = float(hits[0][14])
+            if hits:
+                top_score = float(hits[0][14])
+            else:
+                print('Self bit score not applicable, setting threshold to 0.')
+                top_score = 0.0
 
         mirna.append(top_score)
         rmv_cms = 'rm {}'.format(cms_output)
         rmv_log = 'rm {}'.format(cms_log)
         rmv_fa = 'rm {}'.format(query)
-        subprocess.call(rmv_cms, shell=True)
-        subprocess.call(rmv_log, shell=True)
-        subprocess.call(rmv_fa, shell=True)
+        sp.call(rmv_cms, shell=True)
+        sp.call(rmv_log, shell=True)
+        sp.call(rmv_fa, shell=True)
         #print(mirna)
         #mmdict[mirna[0]] = Mirna(mirna[0], mirna[1], mirna[2], mirna[3], mirna[4], mirna[5], mirna[6])
         mmdict[mirna[0]] = Mirna(*mirna)
@@ -141,13 +154,14 @@ def cmsearch_parser(cms, cmc, mn):
                                         try:
                                             del hits_dict[chromo_dict[chromo][chitnr][0]]
                                         except:
-                                            print(taxon, mirid)
-                                            c += 1
+                                            pass
+                                            #print(taxon, mirid)
+                                            #c += 1
                                     else:
                                         try:
                                             del hits_dict[chromo_dict[chromo][hitnr][0]]
                                         except:
-                                            print(taxon, mirid)
+                                            #print(taxon, mirid)
                                             c += 1
 
     return hits_dict
@@ -171,12 +185,12 @@ def blast_search(s, r, o, c):
             db_command = 'makeblastdb -in {} -dbtype nucl'.format(r)
             print(checkpath)
             print(db_command)
-            subprocess.call(db_command, shell=True)
+            sp.call(db_command, shell=True)
             break
             
     #blast_output = ''
     blast_command = 'blastn -task blastn -db {0} -query {1} -out {2} -num_threads {3} -outfmt 6'.format(r, s, o, c)
-    subprocess.call(blast_command, shell=True)
+    sp.call(blast_command, shell=True)
     #return blast_output
 
 #a: dictionary of accepted hits
@@ -232,7 +246,7 @@ def main():
     #mpi = args.mpi
     #msl = args.msl
     blast_cutoff = 0.8
-    cm_cutoff = 0.5
+    cm_cutoff = 0.9
     #mpi = 0
     msl = 0.9
     
@@ -261,7 +275,7 @@ def main():
         mirna_id = mirna.name
         outdir = '{}/{}'.format(output, mirna_id)
         if not os.path.isdir(outdir):
-            subprocess.call('mkdir {}'.format(outdir), shell=True)
+            sp.call('mkdir {}'.format(outdir), shell=True)
         print('\n### Running cmsearch for {}. ###\n'.format(mirna_id))
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
         #cut_off = mirna.bit*0.9
@@ -281,7 +295,7 @@ def main():
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-        subprocess.call(cms_command, shell=True)
+        #sp.call(cms_command, shell=True)
         cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
         #print(cm_results)
         
@@ -306,6 +320,7 @@ def main():
         ##### perform reverse blast test #####
         
         #accepted_hits = []
+        accepted_hits = {}
     
         for candidate in candidates:
             sequence = candidates[candidate]
@@ -316,18 +331,20 @@ def main():
             blast_search(temp_fasta, reference, blast_output, cpu)
             bp = BlastParser(mirna, blast_output, msl)
             #print(bp)
-            if not bp.parse_blast_output():
-                #accepted_hits.append(candidate)
-                del candidates[candidate]
+            if bp.parse_blast_output():
+                accepted_hits[candidate] = sequence
+            #if not bp.parse_blast_output():
+
+                #del candidates[candidate]
                 
             #if bp.accepted:
                 #accepted_hits.append('')
         #print(accepted_hits)
         ##### write output file #####
-        if candidates:
+        if accepted_hits:
             print('### Writing output of accepted candidates. ###\n')
             outpath = '{0}/{1}_orthologs.fa'.format(outdir, mirna_id)
-            write_output(candidates, outpath)
+            write_output(accepted_hits, outpath)
         else:
             print('None of the candidates for {} could be verified.\n'.format(mirna_id))
         print('### Finished ortholog search for {}. ###'.format(mirna_id))

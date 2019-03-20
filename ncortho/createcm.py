@@ -4,9 +4,10 @@
 #import RNA
 import argparse
 import subprocess
+import sys
 
 #ncOrtho imports
-from coreset import CoreSet
+#from coreset import CoreSet
 
 class CmConstructor(object):
     
@@ -30,7 +31,8 @@ class CmConstructor(object):
         #return None
 
 def main():
-    parser = argparse.ArgumentParser()
+    #print('Doing stuff')
+    #parser = argparse.ArgumentParser()
     #args = parser.parse_args()
     #alignment = args.alignment
     #output = args.output
@@ -41,13 +43,16 @@ def main():
         #None
         #test_coreset = CoreSet()
     
-    test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/rna_aln.sto'
-    test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
-    test_name = 'mir-1'
+    #test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/rna_aln.sto'
+    #test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/alignments/mmu-let-7a-1.sto'
+    test_alignment = sys.argv[1]
+    #test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
+    test_name = test_alignment.split('/')[-1].split('.')[0]
+    test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_covariance_model_construction/covariance_models/' + test_name
     test_cpu = 4
     test_cc = CmConstructor(test_alignment, test_outpath, test_name, test_cpu)
-    #test_cc.construct()
-    #test_cc.calibrate()
+    test_cc.construct()
+    test_cc.calibrate()
 
 if __name__ == '__main__':
     main()

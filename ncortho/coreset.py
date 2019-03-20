@@ -13,23 +13,25 @@ import glob
 import pickle
 import genparser
 import pyfaidx
+import sys
 #import cPickle as pickle
 
-#core = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
 ref_gtf_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/ref_gtf'
-#core_gtf = glob.glob('/home/andreas/Documents/Internship/M.musculus_root/cm_retry/core/gtf/*.gtf')
 #core_gtf_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core/*.gtf')
 core_gtf_paths = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core'
 core_fa_paths = '/share/project/andreas/miRNA_project/mouse_core_genomes'
-mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
-#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mirnas_test_set.tsv'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu-mir-466c-1.txt'
+#mirna_path = sys.argv[1]
+mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/core_set_mirnas.txt'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/reference.gtf'
 reference_path = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
 #reference = '/media/andreas/Data/ncOrtho/sample_data/core_test/gtf/pseudo_ref_genes.gtf'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/pseudo_ref_genes.gtf'
 oma_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/oma/*')
 out_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/output'
-c=0
+c = 0
+mip = 3
 
 mirna_dict = {}
 neighbor_dict = {}
@@ -68,8 +70,11 @@ def gtf_parser(species):
     #    print gen_dict
     #if chr_dict:
     #    print chr_dict
+    #print(species_name)
+    #print(len(chr_dict.keys()))
     return chr_dict
 
+#Try to find the ortholog for a given reference gene in a core set species
 def ortho_search(r_gene):
     #print(r_gene)
     orthologs = {}
@@ -212,6 +217,7 @@ for mirna in mirnas:
 
 ### Search for the coordinates of the orthologs and extract the sequences
 for taxon in neighbor_dict:
+    print('Starting synteny analysis for {}'.format(taxon))
     gtf_path = '{0}/{1}.gtf'.format(core_gtf_paths, taxon)
     fasta_path = glob.glob('{0}/{1}*.fa'.format(core_fa_paths, taxon))
     #print(fasta_path)
@@ -223,12 +229,17 @@ for taxon in neighbor_dict:
     print('Trying to parse GTF file for {}.'.format(taxon))
     try:
         core_gtf_dict = gtf_parser(gtf_path)
+        #print(core_gtf_dict)
+        #print('Worked')
         #print('Parsed GTF file successfully for {}.'.format(taxon))
-        print(neighbor_dict[taxon])
+        #print(neighbor_dict[taxon])
         for mirna in neighbor_dict[taxon]:
+            #print('!!! {} !!!'.format(mirna))
+            #print(neighbor_dict[taxon][mirna])
             style = neighbor_dict[taxon][mirna][0]
             #print(style)
             if style == 'inside' or style == 'opposite':
+                #print('style')
                 #print(style)
                 try:
                     ortho_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
@@ -253,26 +264,78 @@ for taxon in neighbor_dict:
                 except:
                     print('{} not found in GTF file.'.format(mirna[1]))
             elif style == 'in-between':
-                left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
-                right_data = core_gtf_dict[neighbor_dict[taxon][mirna][2]]
+                #print('#\n#\n#\n#\n#\n#\n#\n#\n')
+                #print(neighbor_dict[taxon][mirna][2])
+                #left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
+                left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1][0]]
+                #right_data = core_gtf_dict[neighbor_dict[taxon][mirna][2]]
+                right_data = core_gtf_dict[neighbor_dict[taxon][mirna][1][1]]
+                print('#########################')
+#Test to see if the two orthologs are themselves neighbors where their distance cannot be larger than the selected mip value
+                if left_data[0] == right_data[0] and abs(left_data[1] - right_data[1]) <= mip:
+#Determine which sequence to include for the synteny-based ortholog search depending on the order of orthologs
+                    if left_data[1] < right_data[1]:
+                        print('left')
+                        print(core_gtf_dict[left_data[0]][left_data[1]])
+                        print(core_gtf_dict[right_data[0]][right_data[1]])
+                        contig = left_data[0]
+                        print(contig)
+                        seq_start = core_gtf_dict[left_data[0]][left_data[1]][2]
+                        print(seq_start)
+                        seq_end = core_gtf_dict[right_data[0]][right_data[1]][1]
+                        print(seq_end)
+                        seq = genome[contig][seq_start-1:seq_end].seq
+                        try:
+                            mirna_dict[mirna][taxon] = seq
+                        except:
+                            mirna_dict[mirna] = {taxon: seq}
+                    elif right_data[1] < left_data[1]:
+                        print('right')
+                        print(core_gtf_dict[right_data[0]][right_data[1]])
+                        print(core_gtf_dict[left_data[0]][left_data[1]])
+                        contig = left_data[0]
+                        print(contig)
+                        seq_start = core_gtf_dict[left_data[0]][left_data[1]][2]
+                        print(seq_start)
+                        seq_end = core_gtf_dict[right_data[0]][right_data[1]][1]
+                        print(seq_end)
+                        seq = genome[contig][seq_start-1:seq_end].seq
+                        try:
+                            mirna_dict[mirna][taxon] = seq
+                        except:
+                            mirna_dict[mirna] = {taxon: seq}
+                    print('Synteny fulfilled.')
+                    #print(left_data)
+                    #print(right_data)
+                else:
+                    print('No shared synteny for {} in {}.'.format(mirna, taxon))
+                    print(left_data)
+                    print(right_data)
+                #print(neighbor_dict[taxon][mirna][1])
                 #print(core_gtf_dict[neighbor_dict[taxon][mirna]])
-#                print(left_data)
-#                print(right_data)
+                #print(left_data)
+                #print(right_data)
                 #print(neighbor_dict[taxon][mirna])
                 ### test if the two orthologs are also neighbors
                 ### take the end position of the one and the start position of the other to extract sequence
     except:
         #print('No GTF file found for {}'.format(taxon))
         continue
+def write_output():
+    for mirna in mirna_dict:
+        with open('{0}/{1}.fa'.format(out_path, mirna), 'w') as outfile:
+            for core_taxon in mirna_dict[mirna]:
+                outfile.write('>{0}\n{1}\n'.format(core_taxon, mirna_dict[mirna][core_taxon]))
 
-for mirna in mirna_dict:
-    with open('{0}/{1}.fa'.format(out_path, mirna), 'w') as outfile:
-        for core_taxon in mirna_dict[mirna]:
-            outfile.write('>{0}\n{1}\n'.format(core_taxon, mirna_dict[mirna][core_taxon]))
-    
-#print(mirna_dict)
+write_output()
+
+#print(len(mirna_dict))
+#print(core_gtf_dict)    
+#print(neighbor_dict)
+#print(mirna_dict.keys())
 #def main():
 #    print('coreset')
     
 #if __name__ == '__main__':
 #    main()
+#print(neighbor_dict)
