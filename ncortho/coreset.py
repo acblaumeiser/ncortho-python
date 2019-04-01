@@ -23,15 +23,19 @@ core_fa_paths = '/share/project/andreas/miRNA_project/mouse_core_genomes'
 #mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna.tsv'
 #mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu-mir-466c-1.txt'
 #mirna_path = sys.argv[1]
-mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/core_set_mirnas.txt'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/core_set_mirnas.txt'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mir-411.tsv'
+mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna_hairpin_high_confidence.tsv'
+#mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mir-411.tsv'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/reference.gtf'
 reference_path = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
 #reference = '/media/andreas/Data/ncOrtho/sample_data/core_test/gtf/pseudo_ref_genes.gtf'
 #reference = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/pseudo_ref_genes.gtf'
 oma_paths = glob.glob('/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/oma/*')
 out_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/output'
+#out_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/output_mir-411'
 c = 0
-mip = 3
+mip = 10
 
 mirna_dict = {}
 neighbor_dict = {}
@@ -229,6 +233,14 @@ for taxon in neighbor_dict:
     print('Trying to parse GTF file for {}.'.format(taxon))
     try:
         core_gtf_dict = gtf_parser(gtf_path)
+        if taxon == 'Rattus_norvegicus':
+            print(core_gtf_dict['X'][750])
+            print(core_gtf_dict['X'][751])
+            print(core_gtf_dict['X'][752])
+            print(core_gtf_dict['X'][753])
+            print(core_gtf_dict['X'][754])
+            print(core_gtf_dict['ENSRNOG00000051726'])
+            print(core_gtf_dict['ENSRNOG00000057464'])
         #print(core_gtf_dict)
         #print('Worked')
         #print('Parsed GTF file successfully for {}.'.format(taxon))
@@ -271,6 +283,7 @@ for taxon in neighbor_dict:
                 #right_data = core_gtf_dict[neighbor_dict[taxon][mirna][2]]
                 right_data = core_gtf_dict[neighbor_dict[taxon][mirna][1][1]]
                 print('#########################')
+                print(abs(left_data[1] - right_data[1]))
 #Test to see if the two orthologs are themselves neighbors where their distance cannot be larger than the selected mip value
                 if left_data[0] == right_data[0] and abs(left_data[1] - right_data[1]) <= mip:
 #Determine which sequence to include for the synteny-based ortholog search depending on the order of orthologs
@@ -299,7 +312,10 @@ for taxon in neighbor_dict:
                         print(seq_start)
                         seq_end = core_gtf_dict[right_data[0]][right_data[1]][1]
                         print(seq_end)
+                        seq_start, seq_end = seq_end, seq_start
+                        print('Trying to parse sequence.')
                         seq = genome[contig][seq_start-1:seq_end].seq
+                        #print(seq)
                         try:
                             mirna_dict[mirna][taxon] = seq
                         except:
@@ -319,7 +335,7 @@ for taxon in neighbor_dict:
                 ### test if the two orthologs are also neighbors
                 ### take the end position of the one and the start position of the other to extract sequence
     except:
-        #print('No GTF file found for {}'.format(taxon))
+        print('No GTF file found for {}'.format(taxon))
         continue
 def write_output():
     for mirna in mirna_dict:
@@ -328,6 +344,8 @@ def write_output():
                 outfile.write('>{0}\n{1}\n'.format(core_taxon, mirna_dict[mirna][core_taxon]))
 
 write_output()
+
+print(ortho_dict['Cavia_porcellus']['ENSMUSG00000000838'])
 
 #print(len(mirna_dict))
 #print(core_gtf_dict)    

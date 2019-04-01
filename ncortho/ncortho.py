@@ -7,7 +7,7 @@
 ###Python
 #from __future__ import print_function
 import argparse
-import multiprocessing
+#import multiprocessing
 import os
 import subprocess as sp
 import sys
@@ -73,10 +73,11 @@ def mirna_maker(mirpath, cmpath, output):
         # create a temporary FASTA file with the miRNA sequence as query for cmsearch
         with open(query, 'w') as tmpfile:
             tmpfile.write('>{0}\n{1}'.format(mirid, seq))
-
+        #cmsearch = 'cmsearch'
+        cmsearch = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
         cms_output = '{0}/{1}/cmsearch_{1}_tmp.out'.format(output, mirid)
         cms_log = '{0}/{1}/cmsearch_{1}.log'.format(output, mirid)
-        cms_command = 'cmsearch -E 0.01 --noali -o {3} --tblout {0} {1} {2}'.format(cms_output, model, query, cms_log)
+        cms_command = '{4} -E 0.01 --noali -o {3} --tblout {0} {1} {2}'.format(cms_output, model, query, cms_log, cmsearch)
         sp.call(cms_command, shell=True)
         with open(cms_output) as cmsfile:
             hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
@@ -104,12 +105,16 @@ def mirna_maker(mirpath, cmpath, output):
 def cmsearch_parser(cms, cmc, mn):
     hits_dict = {}
     chromo_dict = {}
+    cut_off = cmc
+    print(cut_off)
+    print('!!!!!!!!!!!!!!!!!!!!!!!!')
     with open(cms) as cmsfile:
-        hits = [line.strip().split() for line in cmsfile if not line.startswith('#')]
+        hits = [line.strip().split() for line in cmsfile if not line.startswith('#') and float(line.strip().split()[14]) >= cut_off]
+        #print(hits)
         if hits:
             #top_score = float(hits[0][14])
             #cut_off = top_score * cmc
-            cut_off = cmc
+            #cut_off = cmc
             #hits_dict = {}
             for i, hit in enumerate(hits):
                 #print(hit)
@@ -189,7 +194,7 @@ def blast_search(s, r, o, c):
             break
             
     #blast_output = ''
-    blast_command = 'blastn -task blastn -db {0} -query {1} -out {2} -num_threads {3} -outfmt 6'.format(r, s, o, c)
+    blast_command = 'blastn -dust no -task blastn -db {0} -query {1} -out {2} -num_threads {3} -outfmt 6'.format(r, s, o, c)
     sp.call(blast_command, shell=True)
     #return blast_output
 
@@ -287,7 +292,8 @@ def main():
         ### original Perl command
         #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
         #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
-        cms_command = 'cmsearch -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off)
+        cmsearch = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
+        cms_command = '{6} -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
         
         #### Remember to include -incT value to limit accepted hits by bit score filter, use reference bit score
         
@@ -295,9 +301,11 @@ def main():
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-        #sp.call(cms_command, shell=True)
-        cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
-        #print(cm_results)
+        sp.call(cms_command, shell=True)
+        #cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
+        cm_results = cmsearch_parser(cms_output, cut_off, mirna_id)
+        print('!!!!!!!!!!!!!!!')
+        print(cm_results)
         
         ##### extract sequences for candidate hits #####
         
