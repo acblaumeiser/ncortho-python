@@ -107,7 +107,7 @@ def cmsearch_parser(cms, cmc, mn):
     chromo_dict = {}
     cut_off = cmc
     print(cut_off)
-    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+    #print('!!!!!!!!!!!!!!!!!!!!!!!!')
     with open(cms) as cmsfile:
         hits = [line.strip().split() for line in cmsfile if not line.startswith('#') and float(line.strip().split()[14]) >= cut_off]
         #print(hits)
@@ -251,7 +251,7 @@ def main():
     #mpi = args.mpi
     #msl = args.msl
     blast_cutoff = 0.8
-    cm_cutoff = 0.9
+    cm_cutoff = 0.6
     #mpi = 0
     msl = 0.9
     
@@ -279,8 +279,11 @@ def main():
         mirna = mirna_dict[mir_data]
         mirna_id = mirna.name
         outdir = '{}/{}'.format(output, mirna_id)
+        #Check if outpath exists, otherwise create it
         if not os.path.isdir(outdir):
             sp.call('mkdir {}'.format(outdir), shell=True)
+        #Change to outdir
+        os.chdir(outdir)
         print('\n### Running cmsearch for {}. ###\n'.format(mirna_id))
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
         cut_off = mirna.bit*cm_cutoff
@@ -292,9 +295,11 @@ def main():
         #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
         #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
         cmsearch = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
-        cms_command = '{6} -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
+        #cms_command = '{6} -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
+        cms_command = '{6} -T {5} --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
         
         #### Remember to include -incT value to limit accepted hits by bit score filter, use reference bit score
+        # DONE
         
         #print(cms_command)
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
@@ -303,7 +308,7 @@ def main():
         sp.call(cms_command, shell=True)
         #cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
         cm_results = cmsearch_parser(cms_output, cut_off, mirna_id)
-        print('!!!!!!!!!!!!!!!')
+        #print('!!!!!!!!!!!!!!!')
         print(cm_results)
         
         ##### extract sequences for candidate hits #####
@@ -352,6 +357,7 @@ def main():
             print('### Writing output of accepted candidates. ###\n')
             outpath = '{0}/{1}_orthologs.fa'.format(outdir, mirna_id)
             write_output(accepted_hits, outpath)
+            print('### Finished output writing. ###\n')
         else:
             print('None of the candidates for {} could be verified.\n'.format(mirna_id))
         print('### Finished ortholog search for {}. ###'.format(mirna_id))
