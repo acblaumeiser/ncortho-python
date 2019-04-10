@@ -1,5 +1,6 @@
 '''
-Extract miRNA sequence from query genome according to cmsearch coordinates
+ncOrtho submodule
+Extract (miRNA) sequence from query genome according to cmsearch coordinates
 '''
 
 #import Bio
@@ -21,7 +22,7 @@ class GenomeParser():
     def extract_sequences(self,):
         seq_dict = {}
         for hit in self.hitlist:
-            print('')
+            #print('')
             if hit[4] == '+':
                 seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
             elif hit[4] == '-':

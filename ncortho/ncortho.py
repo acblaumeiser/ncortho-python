@@ -1,22 +1,22 @@
 '''
 #Re-implementation of ncOrtho in Python
+#TODO: include license
 '''
 
-###modules import
+### modules import
 
-###Python
-#from __future__ import print_function
+### Python
 import argparse
-#import multiprocessing
+import multiprocessing as mp
 import os
 import subprocess as sp
 import sys
 
-###External
+### External
 #import pyfaidx
 #import RNA
 
-###ncOrtho internal modules
+### ncOrtho internal modules
 from blastparser import BlastParser
 from genparser import GenomeParser
 #from coreset import CoreSet
@@ -57,17 +57,17 @@ def mirna_maker(mirpath, cmpath, output):
                 mkdir = 'mkdir {}/{}'.format(output, mirid)
                 sp.call(mkdir, shell=True)
             except:
-                print('Cannot create output folder for {}. Skipping to next miRNA.')
+                print('### Cannot create output folder for {}. Skipping to next miRNA. ###')
                 continue
         # obtain the reference bit score for each miRNA by applying it to its own covariance model
-        print('Calculating reference bit score for {}.'.format(mirid))
+        print('### Calculating reference bit score for {}. ###'.format(mirid))
         seq = mirna[5]
         query = '{0}/{1}/{1}.fa'.format(output, mirid)
         model = '{0}/{1}.cm'.format(cmpath, mirid)
         #print(query)
         # check if the covariance model even exists, otherwise skip to the next miRNA
         if not os.path.isfile(model):
-            print('No covariance model found for {}.'.format(mirid))
+            print('### No covariance model found for {}. ###'.format(mirid))
             continue
         
         # create a temporary FASTA file with the miRNA sequence as query for cmsearch
@@ -84,7 +84,7 @@ def mirna_maker(mirpath, cmpath, output):
             if hits:
                 top_score = float(hits[0][14])
             else:
-                print('Self bit score not applicable, setting threshold to 0.')
+                print('### Self bit score not applicable, setting threshold to 0. ###')
                 top_score = 0.0
 
         mirna.append(top_score)
@@ -106,8 +106,6 @@ def cmsearch_parser(cms, cmc, mn):
     hits_dict = {}
     chromo_dict = {}
     cut_off = cmc
-    print(cut_off)
-    print('!!!!!!!!!!!!!!!!!!!!!!!!')
     with open(cms) as cmsfile:
         hits = [line.strip().split() for line in cmsfile if not line.startswith('#') and float(line.strip().split()[14]) >= cut_off]
         #print(hits)
@@ -212,8 +210,9 @@ def main():
 
     #Define global variables
     parser = argparse.ArgumentParser(prog='python ncortho.py', description='ncRNA orthology prediction tool')
-    #cpu
-    parser.add_argument('-c', '--cpu', metavar='int', type=int, help='number of cpu cores ncOrtho should use')
+    #cpu, use maximum number of available cpus if not specified otherwise
+    parser.add_argument('-c', '--cpu', metavar='int', type=int, help='number of cpu cores ncOrtho should use', nargs='?', const=mp.cpu_count(), default=mp.cpu_count())
+    #parser.add_argument('-c', '--cpu', metavar='int', type=int, help='number of cpu cores ncOrtho should use', nargs='?', const=1, default=1)
     #covariance models
     parser.add_argument('-m', '--models', metavar='<path>', type=str, help='path to your covariance models')
     #mirna
@@ -224,8 +223,16 @@ def main():
     parser.add_argument('-q', '--query', metavar='<.fa>', type=str, help='path to your genome of interest')
     #reference
     parser.add_argument('-r', '--reference', metavar='<.fa>', type=str, help='path to your reference genome')
+    #cutoff
+    parser.add_argument('-t', '--cutoff', metavar='float', type=float, help='cmsearch bit score cutoff', nargs='?', const=0.6, default=0.6)
 
-    args = parser.parse_args()
+    #show help when no arguments are added    
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+    else:
+        args = parser.parse_args()
+    
     #os.getcwd()
     #os.chdir(path)
     #os.path.exists(path)
@@ -244,6 +251,7 @@ def main():
     output = args.output
     query = args.query
     reference = args.reference
+    cm_cutoff = args.cutoff
     
     ### default values for testing purposes
     #blast_cutoff = args.blastc
@@ -251,19 +259,16 @@ def main():
     #mpi = args.mpi
     #msl = args.msl
     blast_cutoff = 0.8
-    cm_cutoff = 0.9
+    #cm_cutoff = 0.9
     #mpi = 0
     msl = 0.9
-    
-    """
-    if len(sys.argv) == 1 and not ext_args:
-        parser.print_help()
-        sys.exit(1)
-    elif ext_args:
-        args = parser.parse_args(ext_args)
-    else:
-        args = parser.parse_args()
-    """
+
+##### printing header #####
+    print('#'*56)
+    print('###'+' '*50+'###')
+    print('###   ncOrtho - ortholog search for non-coding RNA   ###')
+    print('###'+' '*50+'###')
+    print('#'*56+'\n')
         
 ##### create miRNA objects from the list of input miRNAs #####
     
@@ -281,7 +286,7 @@ def main():
         outdir = '{}/{}'.format(output, mirna_id)
         if not os.path.isdir(outdir):
             sp.call('mkdir {}'.format(outdir), shell=True)
-        print('\n### Running cmsearch for {}. ###\n'.format(mirna_id))
+        print('\n### Running cmsearch for {}. ###'.format(mirna_id))
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
         cut_off = mirna.bit*cm_cutoff
         #print(cut_off)
@@ -292,7 +297,8 @@ def main():
         #system("$cmsearch -E 0.01 --cpu $cpu --noali --tblout $cmsearch_out $covariance_model $ukn_genome");
         #cms_command = '{5} -E 0.01 --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, infernal)
         cmsearch = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmsearch'
-        cms_command = '{6} -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
+        #cms_command = '{6} -E 0.01 --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
+        cms_command = '{6} -T {5} --incT {5} --cpu {0} --noali --tblout {1} {2}/{3}.cm {4}'.format(cpu, cms_output, models, mirna_id, query, cut_off, cmsearch)
         
         #### Remember to include -incT value to limit accepted hits by bit score filter, use reference bit score
         
@@ -300,11 +306,10 @@ def main():
         #cms_output = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1.out'
         #cms_output = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/cmsearch_mmu-mir-1.out'
 
-        sp.call(cms_command, shell=True)
+        #sp.call(cms_command, shell=True)
         #cm_results = cmsearch_parser(cms_output, cm_cutoff, mirna_id)
         cm_results = cmsearch_parser(cms_output, cut_off, mirna_id)
-        print('!!!!!!!!!!!!!!!')
-        print(cm_results)
+        #print(cm_results)
         
         ##### extract sequences for candidate hits #####
         
@@ -324,7 +329,7 @@ def main():
             
             print('### Evaluating candidates. ###\n')        
         
-        ##### perform reverse blast test #####
+        ##### perform reverse BLAST test #####
         
         #accepted_hits = []
         accepted_hits = {}
