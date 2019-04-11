@@ -1,7 +1,7 @@
 '''
 ncOrtho submodule
 Extract (miRNA) sequence from query genome according to cmsearch coordinates
-TODO: include licence
+TODO: include licence, author details etc
 '''
 import pyfaidx
 

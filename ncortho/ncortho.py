@@ -39,8 +39,8 @@ class Mirna(object):
         self.bit = bit
 # TODO: include both mature strands, 5p and 3p, aka mature and star
 
-# mirna_maker: parses the miRNA data input file and returns a dictionary of
-#              Mirna objects
+# mirna_maker: Parses the miRNA data input file and returns a dictionary of
+#              Mirna objects.
 # Arguments:
 # mirpath: path to file with microRNA data
 # cmpath: path to covariance models
@@ -58,7 +58,7 @@ def mirna_maker(mirpath, cmpath, output):
 
     for mirna in mirna_data:
         mirid = mirna[0]
-        # check if the output folder exists, otherwise create it
+        # Check if the output folder exists, otherwise create it.
         if not os.path.isdir('{}/{}'.format(output, mirid)):
             try:
                 mkdir = 'mkdir {}/{}'.format(output, mirid)
@@ -70,21 +70,21 @@ def mirna_maker(mirpath, cmpath, output):
                 )
                 continue
 
-        # obtain the reference bit score for each miRNA by applying it to its
-        # own covariance model
+        # Obtain the reference bit score for each miRNA by applying it to its
+        # own covariance model.
         print('# Calculating reference bit score for {}.'.format(mirid))
         seq = mirna[5]
         query = '{0}/{1}/{1}.fa'.format(output, mirid)
         model = '{0}/{1}.cm'.format(cmpath, mirid)
 
-        # check if the covariance model even exists, otherwise skip to the next
-        # miRNA
+        # Check if the covariance model even exists, otherwise skip to the next
+        # miRNA.
         if not os.path.isfile(model):
             print('# No covariance model found for {}.'.format(mirid))
             continue
         
-        # create a temporary FASTA file with the miRNA sequence as query for
-        # external search tool cmsearch to calculate reference bit score
+        # Create a temporary FASTA file with the miRNA sequence as query for
+        # external search tool cmsearch to calculate reference bit score.
         with open(query, 'w') as tmpfile:
             tmpfile.write('>{0}\n{1}'.format(mirid, seq))
         cms_output = '{0}/{1}/cmsearch_{1}_tmp.out'.format(output, mirid)
@@ -110,7 +110,7 @@ def mirna_maker(mirpath, cmpath, output):
 
         mirna.append(top_score)
 
-        # Remove temporary files
+        # Remove temporary files.
         rmv_cms = 'rm {}'.format(cms_output)
         rmv_log = 'rm {}'.format(cms_log)
         rmv_fa = 'rm {}'.format(query)
@@ -118,13 +118,13 @@ def mirna_maker(mirpath, cmpath, output):
         sp.call(rmv_log, shell=True)
         sp.call(rmv_fa, shell=True)
 
-        # Create output
+        # Create output.
         mmdict[mirna[0]] = Mirna(*mirna)
 
     return mmdict
 
-# cmsearch_parser: parse the output of cmsearch while eliminating duplicates
-#                  and filtering entries according to the defined cutoff
+# cmsearch_parser: Parse the output of cmsearch while eliminating duplicates
+#                  and filtering entries according to the defined cutoff.
 # Arguments:
 # cms: path to cmsearch output
 # cmc: cutoff to decide which candidate hits should be included for the reverse
@@ -138,14 +138,14 @@ def cmsearch_parser(cms, cmc, mirid):
     cut_off = cmc
 
     with open(cms) as cmsfile:
-        # Collect only the hits which satisfy the bit score cutoff
+        # Collect only the hits which satisfy the bit score cutoff.
         hits = [
             line.strip().split() for line in cmsfile
             if not line.startswith('#') and
             float(line.strip().split()[14]) >= cut_off
         ]
 
-        # Add the hits to the return dictionary
+        # Add the hits to the return dictionary.
         if hits:
             for candidate_nr, hit in enumerate(hits, 1):
                 data = (
@@ -155,13 +155,13 @@ def cmsearch_parser(cms, cmc, mirid):
                 hits_dict[data[0]] = data
 
                 # Store the hits that satisfy the bit score cutoff to filter
-                # duplicates
+                # duplicates.
                 try:
                     chromo_dict[data[1]].append(data)
                 except:
                     chromo_dict[data[1]] = [data]
 
-    # Loop over the candidate hits to eliminate duplicates
+    # Loop over the candidate hits to eliminate duplicates.
     for chromo in chromo_dict:
                 nrhits = len(chromo_dict[chromo])
                 if nrhits > 1:
@@ -200,21 +200,20 @@ def cmsearch_parser(cms, cmc, mirid):
                                             pass
     return hits_dict
 
-# blast_search: Perform a BLASTn search in the reference genome for a candidate
+# blast_search: Perform a BLAST search in the reference genome for a candidate.
 # s: cmsearch result
 # r: reference genome
 # o: output name
 # c: number of threads
 def blast_search(s, r, o, c):
-    # Check if BLAST database exists, otherwise create it
-    # Database files are .nhr, .nin, .nsq
-    # Existence of a file can be checked via os.path.isfile(path)
+    # Check if BLAST database exists, otherwise create it.
+    # Database files are ".nhr", ".nin", ".nsq".
     file_extensions = ['.nhr', '.nin', '.nsq']
     for fe in file_extensions:
         checkpath = '{}{}'.format(r, fe)
         if not os.path.isfile(checkpath):
         # At least one of the BLAST db files is not existent and has to be
-        # created
+        # created.
             db_command = 'makeblastdb -in {} -dbtype nucl'.format(r)
             sp.call(db_command, shell=True)
             break
@@ -224,7 +223,7 @@ def blast_search(s, r, o, c):
     )
     sp.call(blast_command, shell=True)
 
-# write_output: write a FASTA file containing the accepted orthologs
+# write_output: Write a FASTA file containing the accepted orthologs.
 # Arguments:
 # a: dictionary of accepted hits
 # o: path for output
@@ -324,23 +323,23 @@ def main():
     #cm_cutoff = 0.9
     msl = 0.9
        
-    # Create miRNA objects from the list of input miRNAs
+    # Create miRNA objects from the list of input miRNAs.
     mirna_dict = mirna_maker(mirnas, models, output)
 
-    # Identify ortholog candidates
+    # Identify ortholog candidates.
     for mir_data in mirna_dict:
         mirna = mirna_dict[mir_data]
         mirna_id = mirna.name
         outdir = '{}/{}'.format(output, mirna_id)
-        # Create output folder, if not existent
+        # Create output folder, if not existent.
         if not os.path.isdir(outdir):
             sp.call('mkdir {}'.format(outdir), shell=True)
         print('\n# Running covariance model search for {}.'.format(mirna_id))
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
-        # Calculate the bit score cutoff
+        # Calculate the bit score cutoff.
         cut_off = mirna.bit*cm_cutoff
-        # Perform covariance model search
-        # Report and inclusion thresholds set according to cutoff
+        # Perform covariance model search.
+        # Report and inclusion thresholds set according to cutoff.
         cms_command = (
             'cmsearch -T {5} --incT {5} --cpu {0} --noali '
             '--tblout {1} {2}/{3}.cm {4}'
@@ -349,7 +348,7 @@ def main():
         sp.call(cms_command, shell=True)
         cm_results = cmsearch_parser(cms_output, cut_off, mirna_id)
         
-        # extract sequences for candidate hits (if any were found)
+        # Extract sequences for candidate hits (if any were found).
         if not cm_results:
             print('# No hits found for {}.\n'.format(mirna_id))
             continue
@@ -371,7 +370,7 @@ def main():
             print('# Evaluating candidates.\n')        
         
         # Perform reverse BLAST test to verify candidates, stored in
-        # a list (accepted_hits)
+        # a list (accepted_hits).
         accepted_hits = {}
     
         for candidate in candidates:
@@ -386,7 +385,7 @@ def main():
             if bp.parse_blast_output():
                 accepted_hits[candidate] = sequence
 
-        # Write output file if at least one candidate got accepted
+        # Write output file if at least one candidate got accepted.
         if accepted_hits:
             nr_orthologs = len(accepted_hits)
             if nr_orthologs == 1:
