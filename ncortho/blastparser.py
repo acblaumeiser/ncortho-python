@@ -1,18 +1,14 @@
-#Parse the output of a BLAST search and filter the relevant hits
+# Parse the output of a BLAST search and filter the relevant hits
 
-#import Bio
-#from __future__ import print_function
-#import genparser
-#import ncortho
-
-class BlastParser(object):
 #object that parses the blast results and tests for the reverse best hit criterion
+class BlastParser(object):
     def __init__(self, mirna, blastpath, msl):
     #def __init__(self, start, stop, chromosome, strand, blasthits):
         self.start = mirna.start
         self.end = mirna.end
         self.chromosome = mirna.chromosome
         self.strand = mirna.strand
+        del mirna
         self.blastpath = blastpath
         self.blasthits = []
         self.msl = msl

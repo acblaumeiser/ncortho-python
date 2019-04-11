@@ -1,12 +1,9 @@
 '''
 ncOrtho submodule
 Extract (miRNA) sequence from query genome according to cmsearch coordinates
+TODO: include licence
 '''
-
-#import Bio
-#from Bio import SeqIO
 import pyfaidx
-#from pyfaidx import Fasta
 
 class GenomeParser():
     
@@ -22,31 +19,16 @@ class GenomeParser():
     def extract_sequences(self,):
         seq_dict = {}
         for hit in self.hitlist:
-            #print('')
             if hit[4] == '+':
                 seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
             elif hit[4] == '-':
                 seq = self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])].reverse.complement.seq
             seq_dict[hit[0]] = seq
         return seq_dict
-        #identify required chromosomes
-        #extract required chromosomes
-        #required_chromos = set([])
-        #with open(self.genome, 'rU') as genomefile:
-         #   for line in genomefile:
-          #      if line.startswith('>'):
-           #         chromoname = line.strip().split()[0].split('>')[1]
-            #        if chromoname in required_chromos:
-             #           sequence = ''
-        #dictionary storing the required sequences
-        #chromosomes = [chromo.seq for chromo in SeqIO.parse(self.genome, 'fasta') if chromo.id in required_chromos] 
-        #for hit in self.hits:
-            #hit of the form (chromosome, start, stop, strand)
-            #None    
-
+'''
 def main():
     None
-'''
+
     genome_sample = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
     #hitlist = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1_yeast.out'
     hitlist = []
@@ -67,5 +49,5 @@ VII    -         rna_aln              -          cm        1       77   526072  
     #genome_parser.sort_hits()
     #genome_parser.extract_sequence()
     
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
