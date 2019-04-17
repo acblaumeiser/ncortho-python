@@ -1,53 +1,45 @@
 '''
 ncOrtho submodule
-Extract (miRNA) sequence from query genome according to cmsearch coordinates
-TODO: include licence, author details etc
+Extract (pre-miRNA) sequence from query genome according to cmsearch
+coordinates
+Makes use of pyfaidx module for efficient sequence extraction from
+FASTA files
+https://pypi.org/project/pyfaidx/
+TODO: include license, author details etc
 '''
+
 import pyfaidx
 
-class GenomeParser():
+class GenomeParser(object):
     
+    # genpath: path to the genome file to extract from
+    # hitlist: list of hits to extract the sequence for
     def __init__(self, genpath, hitlist):
         self.genpath = genpath
         self.hitlist = hitlist
         self.gene_dict = self.parse_genome()
     
-    def parse_genome(self):
+    # read in the genome
+    def parse_genome(self,):
         genome = pyfaidx.Fasta(self.genpath)
         return genome
     
+    # extract the sequences for each significant hit from cmsearch
     def extract_sequences(self,):
+        # dictionary to store the sequences
         seq_dict = {}
         for hit in self.hitlist:
+            # hit on sense strand, sequence can be extracted directly
             if hit[4] == '+':
                 seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
+            # hit on antisense strand, sequence has to be extracted
+            # as reverse complement
+            # note that cmsearch switches start and end positions in case
+            # of antisense strand hits
             elif hit[4] == '-':
-                seq = self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])].reverse.complement.seq
+                seq = (
+                    self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])]
+                    .reverse.complement.seq
+                )
             seq_dict[hit[0]] = seq
         return seq_dict
-'''
-def main():
-    None
-
-    genome_sample = '/media/andreas/Data/ncOrtho/sample_data/genomes/Saccharomyces_cerevisiae.R64-1-1.dna.chromosome.I.fa'
-    #hitlist = '/media/andreas/Data/ncOrtho/sample_data/output/cmsearch_mmu-mir-1_yeast.out'
-    hitlist = []
-    hitlist.append(('mir-1_c1', 'II', '73326', '73402', '-'))
-    hitlist.append(('mir-1_c2', 'VII', '526072', '526147', '+'))
-    #print(hitlist)
-    gp = GenomeParser(genome_sample, hitlist)
-    hits = gp.extract_sequences()
-    print(hits)
-    #print(gp.hitlist)
-    
-    
-    II     -         rna_aln              -          cm        1       77    73402    73326      -    no    1 0.31   0.0   77.3   8.3e-16 !   dna:genescaffold genescaffold:vicPac1:GeneScaffold_587:1:293948:1 REF
-VII    -         rna_aln              -          cm        1       77   526072   526147      +    no    1 0.46   0.0   63.5   1.2e-11 !   dna:genescaffold genescaffold:vicPac1:GeneScaffold_2748:1:649003:1 REF
-
-'''
-    #genome_parser = GenomeParser(genome_sample, hitlist)
-    #genome_parser.sort_hits()
-    #genome_parser.extract_sequence()
-    
-#if __name__ == '__main__':
-#    main()

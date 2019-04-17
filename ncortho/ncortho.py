@@ -1,6 +1,6 @@
 '''
-#Re-implementation of ncOrtho in Python
-#TODO: include license, author information etc
+# Re-implementation of ncOrtho in Python
+# TODO: include license, author information etc
 '''
 
 # Modules import
@@ -377,6 +377,7 @@ def main():
             sequence = candidates[candidate]
             temp_fasta = '{0}/{1}.fa'.format(outdir, candidate)
             # TODO: change BlastParser to take query directly from command-line
+            #       to avoid creating temporary files
             with open(temp_fasta, 'w') as tempfile:
                 tempfile.write('>{0}\n{1}'.format(candidate, sequence))
             blast_output = '{0}/blast_{1}.out'.format(outdir, candidate)

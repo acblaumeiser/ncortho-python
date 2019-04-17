@@ -1,3 +1,10 @@
+'''
+ncOrtho submodule
+
+TODO: include license, author details etc
+'''
+
+# 
 # Parse the output of a BLAST search and filter the relevant hits
 
 #object that parses the blast results and tests for the reverse best hit criterion

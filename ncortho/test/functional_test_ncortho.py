@@ -1,7 +1,7 @@
 import subprocess as sp
 
 def main():
-    cpu = 64
+    cpu = 4
     mirnas = '/home/andreas/Documents/Internship/mouse_project/ortholog_searches/zebrafish/mir-574.tsv'
     models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_ncortho_search/models'
     ncortho = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/ncortho-python/ncortho/ncortho.py'
