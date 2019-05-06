@@ -14,7 +14,6 @@ def main():
     cutoff = '0.6'
        
     nc_command = 'python {0} -c {1} -m {2} -n {3} -o {4} -q {5} -r {6} -t {7}'.format(ncortho, cpu, models, mirnas, output, query, reference, cutoff)
-    #nc_command = 'python {0} -m {2} -n {3} -o {4} -q {5} -r {6} -t {7}'.format(ncortho, cpu, models, mirnas, output, query, reference, cutoff)
     sp.call(nc_command, shell=True)
 
 if __name__ == "__main__":

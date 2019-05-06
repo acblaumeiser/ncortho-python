@@ -1,14 +1,13 @@
-#Construct a covariance model for a given ncRNA core set alignment in Stockholm format
+# Construct and calibrate a covariance model for a given ncRNA core set
+# alignment in Stockholm format.
 
-#Python imports
-#import RNA
-#import argparse
+import argparse
+import multiprocessing as mp
 import os
 import subprocess as sp
 import sys
 
-#ncOrtho imports
-#from coreset import CoreSet
+###############################################################################
 
 class CmConstructor(object):
     
@@ -20,63 +19,97 @@ class CmConstructor(object):
         self.model = '{0}/{1}.cm'.format(outpath, name)
     
     def construct(self):
-        print('Constructing covariance model for {}.'.format(self.name))
+        print('# Constructing covariance model for {}.'.format(self.name))
         #cmbuild = 'cmbuild'
-        cmbuild = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmbuild'
-        construct_command = '{3} -n {0} -o {1}/{0}_cmbuild.log {1}/{0}.cm {2}'.format(self.name, self.outpath, self.alignment, cmbuild)
+        cmbuild = (
+            '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/'
+            'binaries/cmbuild'
+        )
+        construct_command = (
+            '{0} -n {1} -o {2}/{1}_cmbuild.log {2}/{1}.cm {3}'
+            .format(cmbuild, self.name, self.outpath, self.alignment)
+        )
         sp.call(construct_command, shell=True)
-        #return None
+        print('# Finished covariance model construction.')
     
     def calibrate(self):
-        print('Calibrating covariance model for {}.'.format(self.name))
+        print('# Calibrating covariance model for {}.'.format(self.name))
         #cmcalibrate = 'cmcalibrate'
-        cmcalibrate = '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/binaries/cmcalibrate'
-        calibrate_command = '{0} --cpu {1} {2}'.format(cmcalibrate, self.cpu, self.model)
+        cmcalibrate = (
+            '/home/andreas/Applications/infernal-1.1.2-linux-intel-gcc/'
+            'binaries/cmcalibrate'
+        )
+        calibrate_command = (
+            '{0} --cpu {1} {2}'.format(cmcalibrate, self.cpu, self.model)
+        )
         sp.call(calibrate_command, shell=True)
-        #return None
+        print('# Finished covariance model calibration.')
+
+###############################################################################
 
 def main():
-    #print('Doing stuff')
-    #parser = argparse.ArgumentParser()
-    #args = parser.parse_args()
-    #alignment = args.alignment
-    #output = args.output
-    #cput = args.cpu
+
+    # Parse command-line arguments.
+    parser = argparse.ArgumentParser(
+        prog='python createcm.py', description='covariance model construction'
+    )
+    # cpu, use maximum number of available cpus unless specified otherwise
+    parser.add_argument(
+        '-c', '--cpu', metavar='int', type=int,
+        help='number of CPU cores to use', nargs='?',
+        const=mp.cpu_count(), default=mp.cpu_count()
+    )
+    # output folder
+    parser.add_argument(
+        '-o', '--output', metavar='<path>', type=str,
+        help='path to the output folder'
+    )
+    # query genome
+    parser.add_argument(
+        '-a', '--alignment', metavar='<.sto>', type=str,
+        help='path to input alignment'
+    )
+
+    # Show help when no arguments are added.
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+    else:
+        args = parser.parse_args()
     
-    #if not alignment:
-        #create core set
-        #None
-        #test_coreset = CoreSet()
-    
-    #test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output/rna_aln.sto'
-    #test_alignment = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/alignments/mmu-let-7a-1.sto'
-    test_alignment = sys.argv[1]
-    #test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/output'
-    test_name = test_alignment.split('/')[-1].split('.')[0]
-    test_outpath = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_covariance_model_construction/covariance_models/' + test_name
-    if not os.path.isdir(test_outpath):
-        mkdir_cmd = 'mkdir {}'.format(test_outpath)
+    # Check if computer provides the desired number of cores.
+    available_cpu = mp.cpu_count()
+    if args.cpu > available_cpu:
+        print(
+            '# Error: The provided number of CPU cores is higher than the '
+            'number available on this system. Exiting...'
+        )
+        sys.exit(1)
+    else:
+        cpu = args.cpu
+
+    # Check if alignment file exists.
+    if not os.path.isfile(args.alignment):
+        print(
+            '# Error: The provided path to the alignment file appears to be '
+            'invalid. Exiting...'
+        )
+        sys.exit(1)
+    else:
+        alignment = args.alignment
+
+    output = args.output
+    alignment = args.alignment
+    name = alignment.split('/')[-1].split('.')[0]
+
+    # Check if the output folder exists.
+    if not os.path.isdir(output):
+        mkdir_cmd = 'mkdir {}'.format(output)
         sp.call(mkdir_cmd, shell=True)
-    test_cpu = 4
-    test_cc = CmConstructor(test_alignment, test_outpath, test_name, test_cpu)
-    test_cc.construct()
-    test_cc.calibrate()
+    
+    cmc = CmConstructor(alignment, output, name, cpu)
+    cmc.construct()
+    cmc.calibrate()
 
 if __name__ == '__main__':
     main()
-
-
-'''
-	system("$cmbuild -F $covariance_model $stockholm_aln");
-#	system("$cmbuild $covariance_model $stockholm_aln");
-	print "STEP 04\n";
-	system("$cmcalibrate --cpu $cpu $covariance_model");
-
-
-class CovarianceModel(object):
-    def __init__(self):
-        None
-        self.taxa = 'rat, hamster'
-    def core_set(self):
-        return None
-'''

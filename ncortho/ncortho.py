@@ -200,13 +200,14 @@ def cmsearch_parser(cms, cmc, mirid):
                                             pass
     return hits_dict
 
-# blast_search: Perform a BLAST search in the reference genome for a candidate.
+# blast_search: Perform a reverse BLAST search in the reference genome for a
+# candidate.
 # s: cmsearch result
 # r: reference genome
 # o: output name
 # c: number of threads
 def blast_search(s, r, o, c):
-    # Check if BLAST database exists, otherwise create it.
+    # Check if BLAST database already exists, otherwise create it.
     # Database files are ".nhr", ".nin", ".nsq".
     file_extensions = ['.nhr', '.nin', '.nsq']
     for fe in file_extensions:
@@ -247,7 +248,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python ncortho.py', description='ncRNA orthology prediction tool'
     )
-    # cpu, use maximum number of available cpus if not specified otherwise
+    # cpu, use maximum number of available cpus unless specified otherwise
     parser.add_argument(
         '-c', '--cpu', metavar='int', type=int,
         help='number of cpu cores ncOrtho should use', nargs='?',
