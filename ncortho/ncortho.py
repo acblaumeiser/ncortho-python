@@ -111,12 +111,8 @@ def mirna_maker(mirpath, cmpath, output):
         mirna.append(top_score)
 
         # Remove temporary files.
-        rmv_cms = 'rm {}'.format(cms_output)
-        rmv_log = 'rm {}'.format(cms_log)
-        rmv_fa = 'rm {}'.format(query)
-        sp.call(rmv_cms, shell=True)
-        sp.call(rmv_log, shell=True)
-        sp.call(rmv_fa, shell=True)
+        for rmv_file in [cms_output, cms_log, query]:
+            sp.call('rm {}'.format(rmv_file), shell=True)
 
         # Create output.
         mmdict[mirna[0]] = Mirna(*mirna)
