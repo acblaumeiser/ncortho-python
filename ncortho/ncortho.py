@@ -35,12 +35,13 @@ class Mirna(object):
         self.pre = pre
         # nucleotide sequence of the mature miRNA
         self.mature = mature
-        # reference bit score that miRNA receives by its own covariance model
+        # reference bit score that miRNA receives by its own
+        # covariance model
         self.bit = bit
 # TODO: include both mature strands, 5p and 3p, aka mature and star
 
-# mirna_maker: Parses the miRNA data input file and returns a dictionary of
-#              Mirna objects.
+# mirna_maker: Parses the miRNA data input file and returns a
+#              dictionary of Mirna objects.
 # Arguments:
 # mirpath: path to file with microRNA data
 # cmpath: path to covariance models
@@ -70,21 +71,22 @@ def mirna_maker(mirpath, cmpath, output):
                 )
                 continue
 
-        # Obtain the reference bit score for each miRNA by applying it to its
-        # own covariance model.
+        # Obtain the reference bit score for each miRNA by applying it
+        # to its own covariance model.
         print('# Calculating reference bit score for {}.'.format(mirid))
         seq = mirna[5]
         query = '{0}/{1}/{1}.fa'.format(output, mirid)
         model = '{0}/{1}.cm'.format(cmpath, mirid)
 
-        # Check if the covariance model even exists, otherwise skip to the next
-        # miRNA.
+        # Check if the covariance model even exists, otherwise skip to
+        # the next miRNA.
         if not os.path.isfile(model):
             print('# No covariance model found for {}.'.format(mirid))
             continue
         
-        # Create a temporary FASTA file with the miRNA sequence as query for
-        # external search tool cmsearch to calculate reference bit score.
+        # Create a temporary FASTA file with the miRNA sequence as
+        # query for external search tool cmsearch to calculate
+        # reference bit score.
         with open(query, 'w') as tmpfile:
             tmpfile.write('>{0}\n{1}'.format(mirid, seq))
         cms_output = '{0}/{1}/cmsearch_{1}_tmp.out'.format(output, mirid)
@@ -119,12 +121,13 @@ def mirna_maker(mirpath, cmpath, output):
 
     return mmdict
 
-# cmsearch_parser: Parse the output of cmsearch while eliminating duplicates
-#                  and filtering entries according to the defined cutoff.
+# cmsearch_parser: Parse the output of cmsearch while eliminating
+#                  duplicates and filtering entries according to the
+#                  defined cutoff.
 # Arguments:
 # cms: path to cmsearch output
-# cmc: cutoff to decide which candidate hits should be included for the reverse
-#      BLAST search
+# cmc: cutoff to decide which candidate hits should be included for the
+#      reverse BLAST search
 # mirid: name/id of the microRNA
 def cmsearch_parser(cms, cmc, mirid):
     # Output
@@ -318,7 +321,8 @@ def main():
     #msl = args.msl
     #blast_cutoff = 0.8
     #cm_cutoff = 0.9
-    msl = 0.9
+    # Not in use yet
+    # msl = 0.9
        
     # Create miRNA objects from the list of input miRNAs.
     mirna_dict = mirna_maker(mirnas, models, output)

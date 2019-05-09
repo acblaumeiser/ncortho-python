@@ -1,7 +1,7 @@
-#Create a core set of orthologs
-#Find the corresponding syntenic regions in reference and core species
-#Search for core ortholog
-
+# Create a core set of orthologs
+# Find the corresponding syntenic regions in reference and core species
+# Search for core orthologs by reciprocal BLAST search
+# Create Stockholm structural alignment
 
 #required:
 #reference microRNA data (sequence, coordinates)
@@ -73,10 +73,215 @@ def ortho_search(r_gene, ortho_dict):
             )
     return orthologs
 
+def blastsearch(m_path, r_path, o_path, c):
+
+    core_set = {}
+
+    with open(m_path) as infile:
+        mirnas = [
+            line.strip().split()
+            for line in infile
+            if not line.startswith('#')
+        ]
+
+    for mirna in mirnas:
+        mirid = mirna[0]
+        # Ensure that output folder exists and change to this folder.
+        out_folder = '{}/{}'.format(o_path, mirid)
+        if not os.path.isdir(out_folder):
+            mkdir_cmd = 'mkdir {}'.format(out_folder)
+            sp.call(mkdir_cmd, shell=True)
+        os.chdir('{}/{}'.format(o_path, mirid))
+        print('### {} ###'.format(mirid))
+        # Coordinates of the ncRNA
+        mchr = mirna[1]
+        mstart = int(mirna[2])
+        mend = int(mirna[3])
+
+        # Start of reference bit score computation.
+        # Convert RNA sequence into DNA sequence.
+        preseq = mirna[5].replace('U', 'T')
+        # The miRNA precursors can show a low level of complexity, hence it is
+        # required to deactivate the dust filter for the BLAST search.
+        bit_check = (
+            'blastn -num_threads {0} -dust no -task megablast -db {1} '
+            '-outfmt \"6 bitscore\"'.format(c, r_path)
+        )
+        print(bit_check)
+        ref_bit_cmd = sp.Popen(
+            bit_check, shell=True, stdin=sp.PIPE,
+            stdout=sp.PIPE, stderr=sp.STDOUT
+        )
+        ref_results, err = ref_bit_cmd.communicate(preseq)
+        print(ref_results)
+        ref_bit_score = float(ref_results.split('\n')[0].split('\t')[0])
+        print(ref_bit_score)
+        # End of reference bit score computation.
+        print('Performing reciprocal BLAST search.')
+        # 
+        fasta = '{0}/{1}/{1}.fa'.format(o_path, mirid)
+        #print(fasta)
+
+        if os.path.isfile(fasta):
+            print('FASTA file found for {}.'.format(mirna[0]))
+            print('Checking BLAST database.')
+# Check if BLAST database already exists, otherwise create it.
+    # Database files are ".nhr", ".nin", ".nsq".
+            file_extensions = ['.nhr', '.nin', '.nsq']
+    #file_extensions = ['.nhr']
+            for fe in file_extensions:
+                checkpath = '{}{}'.format(fasta, fe)
+                if not os.path.isfile(checkpath):
+                    print(
+                        'BLAST database does not exist.\n'
+                        'Constructing BLAST database.'
+                    )
+            # At least one of the BLAST db files is not existent and has to be
+            # created.
+                    db_command = (
+                        'makeblastdb -dbtype nucl -in {}'
+                        .format(fasta)
+                    )
+                    sp.call(db_command, shell=True)
+                    break
+            else:
+                print('BLAST database already exists.')
+
+            blastn_cmd = (
+                'blastn -num_threads {0} -task blastn -db {1} -outfmt \"6 '
+                'sseqid evalue bitscore sseq\"'.format(c, fasta)
+            )
+            blastn = sp.Popen(
+                blastn_cmd, shell=True, stdin=sp.PIPE,
+                stdout=sp.PIPE, stderr=sp.STDOUT
+            )
+            results, err = blastn.communicate(preseq)
+##### Collect best hit for each core set species if it is within the accepted bit score range
+            core_dict = {}
+            result_list = results.split('\n')
+            #print(result_list)
+            if result_list:
+                #print(result_list)
+                for hit in result_list:
+                    if hit:
+                        hit_data = hit.split()
+                        if (
+                            not hit_data[0] in core_dict
+                            and float(hit_data[2]) >= 0.5*ref_bit_score
+                        ):
+                        #if not hit_data[0] in core_dict:
+                            core_dict[hit_data[0]] = hit
+                #print(core_dict)
+            #print(results.split('\n'))
+            #print(results)
+##### Re-BLAST #####
+            #if core_dict:
+            for species in core_dict.keys():
+                print(species)
+                # Make sure to eliminate gaps
+                candidate_seq = core_dict[species].split()[3].replace('-', '')
+                reblastn_cmd = (
+                    'blastn -num_threads {0} -task blastn -db {1} -outfmt \"6'
+                    ' sseqid sstart send evalue bitscore\"'
+                    .format(c, r_path)
+                )
+                reblastn = sp.Popen(
+                    reblastn_cmd, shell=True, stdin=sp.PIPE,
+                    stdout=sp.PIPE, stderr=sp.STDOUT
+                )
+                reresults, reerr = reblastn.communicate(candidate_seq)
+                print('Reverse search.')
+                print(reresults.split('\n')[0])
+##### Check if reverse hit overlaps with reference miRNA
+                if reresults:
+                    first_hit = reresults.split('\n')[0].split()
+                    rchr = first_hit[0]
+                    rstart = int(first_hit[1])
+                    rend = int(first_hit[2])
+                    #print(first_hit[1], first_hit[2])
+                    #print(first_hit)
+                    #print('#####')
+                    #print(rchr, mchr)
+                    if rchr == mchr:
+                        print('Same chromosome.')
+                        if (
+                            (rstart <= mstart and mstart <= rend)
+                            or (rstart <= mend and mend <= rend)
+                        ):
+                    #first within second
+                    #print("yes")
+                    #print(tophit)
+                            print('Reciprocity fulfilled.')
+                        elif (
+                            (mstart <= rstart and rstart <= mend)
+                            or (mstart <= rend and rend <= mend)
+                        ):
+                    #second within first
+                    #print("yeah")
+                    #print(tophit)
+                            print('Reciprocity fulfilled.')
+                else:
+                    del core_dict[species]
+                    print(
+                        'No reverse hit for {}. Reciprocity unfulfilled.'
+                        .format(mirid)
+                    )
+
+                #print(results.split('\n')[0].split())
+            #for result in results.split('\n'):
+            #    print(result)
+        # If the FASTA file is not existent, the BLAST search cannot be
+        # performed.
+        else:
+            print('FASTA file not found for {}.'.format(mirna[0]))
+            continue
+        corefile = '{}/{}_core.fa'.format(out_folder, mirid) 
+        with open(corefile, 'w') as outfile:
+            outfile.write('>{}\n{}\n'.format(mirid, preseq))
+            print('##### Core set for {}: #####'.format(mirid))
+            #print('>{}\n{}'.format(mirid, preseq))
+            for accepted in core_dict:
+                #print('>{}\n{}'.format(accepted, core_dict[accepted].split('\t')[3]))
+                outfile.write(
+                    '>{}\n{}\n'
+                    .format(accepted, core_dict[accepted].split('\t')[3])
+                    .replace('-', '')
+                )
+        alignment = '{}/{}.aln'.format(out_folder, mirid)
+        stockholm = '{}/{}.sto'.format(out_folder, mirid)
+        t_coffee = 't_coffee'
+        #t_coffee = '/home/andreas/Applications/tcoffee/Version_11.00.8cbe486/bin/t_coffee'
+        #t_coffee = '/home/andreas/Applications/T-COFFEE_installer_Version_12.00.7fb08c2_linux_x64/bin/t_coffee'
+        #tc_cmd_1 = '{} -quiet=t_coffee.out -cpu 4 -special_mode=rcoffee -in {} -output=clustalw_aln > {}'.format(t_coffee, corefile, alignment)
+        #tc_cmd_1 = '{} -quiet=t_coffee.out -cpu 4 -special_mode=rcoffee -in {} -output=clustalw_aln -outfile {}'.format(t_coffee, corefile, alignment)
+        #tc_cmd_1 = '{} -quiet -multi_core={} -special_mode=rcoffee -in {} -output=clustalw_aln -outfile={}'.format(t_coffee, c, corefile, alignment)
+        #tc_cmd_2 = '{} -other_pg seq_reformat -in {} -action +add_alifold -output stockholm_aln -out {}'.format(t_coffee, alignment, stockholm)
+        # Call T-Coffee for the sequence alignment.
+        print('Building T-Coffee alignment.')
+        tc_cmd_1 = (
+            '{} -quiet -multi_core={} -special_mode=rcoffee -in {} '
+            '-output=clustalw_aln -outfile={}'
+            .format(t_coffee, c, corefile, alignment)
+        )
+        sp.call(tc_cmd_1, shell=True)
+        #with open(alignment) as aln_file:
+            #aln_lines = [line for line in aln_file if not line.startswith('!')]
+        #with open(alignment, 'w') as aln_file:
+         #   for line in aln_lines:
+          #      aln_file.write(line)
+        # Extend the sequence-based alignment by structural information.
+        # Create Stockholm alignment.
+        print('Adding secondary structure to Stockholm format.')
+        tc_cmd_2 = (
+            '{} -other_pg seq_reformat -in {} -action +add_alifold -output '
+            'stockholm_aln -out {}'
+            .format(t_coffee, alignment, stockholm)
+        )
+        sp.call(tc_cmd_2, shell=True)
+
 ###############################################################################
 def main():
     #c = 0
-    mip = 3
     ortho_dict = {}
     mirna_dict = {}
     neighbor_dict = {}
@@ -175,6 +380,7 @@ def main():
     output = args.output
     query = args.query
     ref_gtf_path = args.reference
+    ref_genome = args.genome
     oma_paths = glob.glob('{}/*'.format(args.pairwise))
     core_gtf_paths = args.core
     core_fa_paths = args.query
@@ -211,10 +417,15 @@ def main():
     for mirna in mirnas:
         mirid = mirna[0]
         print('### {0} ###'.format(mirid))
+# Check if output folder exists or create it otherwise
+        if not os.path.isdir('{}/{}'.format(output, mirid)):
+            sp.call('mkdir {}/{}'.format(output, mirid), shell=True)
+### Workaround for differing naming conventions in miRBase and Ensembl
         if 'chr' in mirna[1]:
             chromo = mirna[1].split('chr')[1]
         else:
             chromo = mirna[1]
+###
         start = int(mirna[2])
         end = int(mirna[3])
         strand = mirna[4]
@@ -296,7 +507,7 @@ def main():
                     and strand != gene_data[3]
                 ):
                     solved = True
-                    c+=1
+                    #c+=1
                     print(
                         '{0} is located opposite of the gene {1}.'
                         .format(mirid, gene_data[0])
@@ -356,8 +567,6 @@ def main():
             if not solved:
                 print('Unable to resolve synteny for {}.'.format(mirid))
 
-#print(neighbor_dict)
-
 ### Search for the coordinates of the orthologs and extract the sequences
     for taxon in neighbor_dict:
         print('Starting synteny analysis for {}'.format(taxon))
@@ -372,59 +581,43 @@ def main():
         print('Trying to parse GTF file for {}.'.format(taxon))
         try:
             core_gtf_dict = gtf_parser(gtf_path)
-        #print(core_gtf_dict)
-        #print('Worked')
-        #print('Parsed GTF file successfully for {}.'.format(taxon))
-        #print(neighbor_dict[taxon])
             for mirna in neighbor_dict[taxon]:
-            #print('!!! {} !!!'.format(mirna))
-            #print(neighbor_dict[taxon][mirna])
                 style = neighbor_dict[taxon][mirna][0]
-            #print(style)
                 if style == 'inside' or style == 'opposite':
-                #print('style')
-                #print(style)
 ###############################################################################
                     try:
                         ortho_data = (
                             core_gtf_dict[neighbor_dict[taxon][mirna][1]]
                         )
-                    #print(ortho_data)
-                    #print(core_gtf_dict[ortho_data[0]][ortho_data[1]])
                         positions = list(
                             core_gtf_dict[ortho_data[0]][ortho_data[1]][1:4]
                         )
-                    #print(positions)
                         coordinates = [ortho_data[0]] + positions
-                    #print(coordinates)
                         seq = (
-                            genome[coordinates[0]][coordinates[1]-1:coordinates[2]].seq
+                            genome[coordinates[0]]
+                            [coordinates[1]-1:coordinates[2]].seq
                         )
 
-                    #if coordinates[3] == '+':
-                    #    seq = self.gene_dict[hit[1]][int(hit[2])-1:int(hit[3])].seq
-                    #elif coordinates[3] == '-':
-                    #    seq = self.gene_dict[hit[1]][int(hit[3])-1:int(hit[2])].reverse.complement.seq
-
-                    #print(seq)
                         try:
                             mirna_dict[mirna][taxon] = seq
                         except:
                             mirna_dict[mirna] = {taxon: seq}
-                    #print(core_gtf_dict[neighbor_dict[taxon][mirna][1]])
                     except:
                         print('{} not found in GTF file.'.format(mirna[1]))
                 elif style == 'in-between':
-                #print('#\n#\n#\n#\n#\n#\n#\n#\n')
-                #print(neighbor_dict[taxon][mirna][2])
-                #left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1]]
-                    left_data = core_gtf_dict[neighbor_dict[taxon][mirna][1][0]]
-                #right_data = core_gtf_dict[neighbor_dict[taxon][mirna][2]]
-                    right_data = core_gtf_dict[neighbor_dict[taxon][mirna][1][1]]
+                    left_data = (
+                        core_gtf_dict[neighbor_dict[taxon][mirna][1][0]]
+                    )
+                    right_data = (
+                        core_gtf_dict[neighbor_dict[taxon][mirna][1][1]]
+                    )
                     print('#########################')
 # Test to see if the two orthologs are themselves neighbors where their
-# distance cannot be larger than the selected mip value
-                    if left_data[0] == right_data[0] and abs(left_data[1] - right_data[1]) <= mip:
+# distance cannot be larger than the selected mgi value
+                    if (
+                        left_data[0] == right_data[0]
+                        and abs(left_data[1] - right_data[1]) <= mgi
+                    ):
 # Determine which sequence to include for the synteny-based ortholog search
 # depending on the order of orthologs
 ###############################################################################
@@ -434,9 +627,13 @@ def main():
                             print(core_gtf_dict[right_data[0]][right_data[1]])
                             contig = left_data[0]
                             print(contig)
-                            seq_start = core_gtf_dict[left_data[0]][left_data[1]][2]
+                            seq_start = (
+                                core_gtf_dict[left_data[0]][left_data[1]][2]
+                            )
                             print(seq_start)
-                            seq_end = core_gtf_dict[right_data[0]][right_data[1]][1]
+                            seq_end = (
+                                core_gtf_dict[right_data[0]][right_data[1]][1]
+                            )
                             print(seq_end)
                             seq = genome[contig][seq_start-1:seq_end].seq
                             try:
@@ -449,9 +646,13 @@ def main():
                             print(core_gtf_dict[left_data[0]][left_data[1]])
                             contig = left_data[0]
                             print(contig)
-                            seq_start = core_gtf_dict[left_data[0]][left_data[1]][2]
+                            seq_start = (
+                                core_gtf_dict[left_data[0]][left_data[1]][2]
+                            )
                             print(seq_start)
-                            seq_end = core_gtf_dict[right_data[0]][right_data[1]][1]
+                            seq_end = (
+                                core_gtf_dict[right_data[0]][right_data[1]][1]
+                            )
                             print(seq_end)
                             seq = genome[contig][seq_start-1:seq_end].seq
                             try:
@@ -459,35 +660,33 @@ def main():
                             except:
                                 mirna_dict[mirna] = {taxon: seq}
                         print('Synteny fulfilled.')
-                    #print(left_data)
-                    #print(right_data)
                     else:
-                        print('No shared synteny for {} in {}.'.format(mirna, taxon))
+                        print(
+                            'No shared synteny for {} in {}.'
+                            .format(mirna, taxon)
+                        )
                         print(left_data)
                         print(right_data)
-                #print(neighbor_dict[taxon][mirna][1])
-                #print(core_gtf_dict[neighbor_dict[taxon][mirna]])
-                #print(left_data)
-                #print(right_data)
-                #print(neighbor_dict[taxon][mirna])
-                ### test if the two orthologs are also neighbors
-                ### take the end position of the one and the start position of the other to extract sequence
         except:
         #print('No GTF file found for {}'.format(taxon))
             continue
-    #write_output()
     #print(mirna_dict.keys())
     #print(mirna_dict['mmu-mir-1224'])
-'''
-def write_output():
-    for mirna in mirna_dict:
-        with open('{0}/{1}.fa'.format(out_path, mirna), 'w') as outfile:
-            for core_taxon in mirna_dict[mirna]:
-                outfile.write(
-                    '>{0}\n{1}\n'
-                    .format(core_taxon, mirna_dict[mirna][core_taxon])
-                )
-'''
+
+    def write_output():
+        for mirna in mirna_dict:
+            with open('{0}/{1}/{1}.fa'.format(output, mirna), 'w') as outfile:
+                for core_taxon in mirna_dict[mirna]:
+                    outfile.write(
+                        '>{0}\n{1}\n'
+                        .format(core_taxon, mirna_dict[mirna][core_taxon])
+                    )
+
+    write_output()
+
+    #fasta_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/test_fasta'
+    #blastsearch(mirna_path, fasta_path, ref_genome, output, cpu)
+    blastsearch(mirna_path, ref_genome, output, cpu)
 
 if __name__ == '__main__':
     main()
