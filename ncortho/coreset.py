@@ -107,15 +107,15 @@ def blastsearch(m_path, r_path, o_path, c):
             'blastn -num_threads {0} -dust no -task megablast -db {1} '
             '-outfmt \"6 bitscore\"'.format(c, r_path)
         )
-        print(bit_check)
+        #print(bit_check)
         ref_bit_cmd = sp.Popen(
             bit_check, shell=True, stdin=sp.PIPE,
             stdout=sp.PIPE, stderr=sp.STDOUT
         )
         ref_results, err = ref_bit_cmd.communicate(preseq)
-        print(ref_results)
+        #print(ref_results)
         ref_bit_score = float(ref_results.split('\n')[0].split('\t')[0])
-        print(ref_bit_score)
+        #print(ref_bit_score)
         # End of reference bit score computation.
         print('Performing reciprocal BLAST search.')
         # 
@@ -191,7 +191,7 @@ def blastsearch(m_path, r_path, o_path, c):
                 )
                 reresults, reerr = reblastn.communicate(candidate_seq)
                 print('Reverse search.')
-                print(reresults.split('\n')[0])
+                #print(reresults.split('\n')[0])
 ##### Check if reverse hit overlaps with reference miRNA
                 if reresults:
                     first_hit = reresults.split('\n')[0].split()

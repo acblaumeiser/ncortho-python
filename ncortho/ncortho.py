@@ -322,7 +322,7 @@ def main():
     #blast_cutoff = 0.8
     #cm_cutoff = 0.9
     # Not in use yet
-    # msl = 0.9
+    msl = 0.9
        
     # Create miRNA objects from the list of input miRNAs.
     mirna_dict = mirna_maker(mirnas, models, output)
