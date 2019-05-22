@@ -54,6 +54,7 @@ def gtf_parser(gtf):
                 i += 1
     return chr_dict
 
+
 ###############################################################################
 #Try to find the ortholog for a given reference gene in a core set species
 def ortho_search(r_gene, ortho_dict):
@@ -73,6 +74,8 @@ def ortho_search(r_gene, ortho_dict):
             )
     return orthologs
 
+
+# Perform reciprocal BLAST search and construct Stockholm alignment
 def blastsearch(m_path, r_path, o_path, c):
 
     core_set = {}
@@ -104,7 +107,7 @@ def blastsearch(m_path, r_path, o_path, c):
         # The miRNA precursors can show a low level of complexity, hence it is
         # required to deactivate the dust filter for the BLAST search.
         bit_check = (
-            'blastn -num_threads {0} -dust no -task megablast -db {1} '
+            'blastn -num_threads {0} -dust yes -task megablast -db {1} '
             '-outfmt \"6 bitscore\"'.format(c, r_path)
         )
         #print(bit_check)
@@ -278,6 +281,7 @@ def blastsearch(m_path, r_path, o_path, c):
             .format(t_coffee, alignment, stockholm)
         )
         sp.call(tc_cmd_2, shell=True)
+
 
 ###############################################################################
 def main():
@@ -582,6 +586,7 @@ def main():
         try:
             core_gtf_dict = gtf_parser(gtf_path)
             for mirna in neighbor_dict[taxon]:
+                print(mirna)
                 style = neighbor_dict[taxon][mirna][0]
                 if style == 'inside' or style == 'opposite':
 ###############################################################################
@@ -686,7 +691,7 @@ def main():
 
     #fasta_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/test_fasta'
     #blastsearch(mirna_path, fasta_path, ref_genome, output, cpu)
-    blastsearch(mirna_path, ref_genome, output, cpu)
+    #blastsearch(mirna_path, ref_genome, output, cpu)
 
 if __name__ == '__main__':
     main()

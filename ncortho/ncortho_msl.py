@@ -48,12 +48,11 @@ class Mirna(object):
 # mirpath: path to file with microRNA data
 # cmpath: path to covariance models
 # output: path for writing temporary files
-def mirna_maker(mirpath, cmpath, output):
+def mirna_maker(mirpath, cmpath, output, msl):
     
     mmdict = {} # will be the return object
     
     with open(mirpath) as mirna_file:
-        
         mirna_data = [
             line.strip().split() for line in mirna_file
             if not line.startswith('#')
@@ -105,6 +104,9 @@ def mirna_maker(mirpath, cmpath, output):
             ]
             if hits:
                 top_score = float(hits[0][14])
+            # In case of any issues occuring in the calculation of the bit
+            # score, no specific threshold can be determined. The value will
+            # set to zero, which technically turns off the filter.
             else:
                 print(
                     '# Warning: Self bit score not applicable, '
@@ -131,11 +133,12 @@ def mirna_maker(mirpath, cmpath, output):
 # cms: path to cmsearch output
 # cmc: cutoff to decide which candidate hits should be included for the
 #      reverse BLAST search
+# lc: length cutoff
 # mirid: name/id of the microRNA
-def cmsearch_parser(cms, cmc, mirid):
+def cmsearch_parser(cms, cmc, lc, mirid):
     # Output
     hits_dict = {}
-    # Required for finding duplicates
+    # Required for finding duplicates, stores hits per chromosome
     chromo_dict = {}
     cut_off = cmc
 
@@ -143,8 +146,9 @@ def cmsearch_parser(cms, cmc, mirid):
         # Collect only the hits which satisfy the bit score cutoff.
         hits = [
             line.strip().split() for line in cmsfile
-            if not line.startswith('#') and
-            float(line.strip().split()[14]) >= cut_off
+            if not line.startswith('#')
+            and float(line.strip().split()[14]) >= cut_off
+            and abs(int(line.split()[7])-int(line.strip().split()[8])) >= lc
         ]
 
         # Add the hits to the return dictionary.
@@ -289,7 +293,11 @@ def main():
         '-t', '--cutoff', metavar='float', type=float,
         help='cmsearch bit score cutoff', nargs='?', const=0.6, default=0.6
     )
-
+    # length filter to prevent short hits
+    parser.add_argument(
+        '-l', '--msl', metavar='float', type=float,
+        help='hit length filter', nargs='?', const=0.9, default=0.9
+    )
     # Show help when no arguments are added.
     if len(sys.argv) == 1:
         parser.print_help()
@@ -321,17 +329,12 @@ def main():
     query = args.query
     reference = args.reference
     cm_cutoff = args.cutoff
-
-    ### default values for testing purposes
-    #blast_cutoff = args.blastc
-    #msl = args.msl
-    #blast_cutoff = 0.8
-    #cm_cutoff = 0.9
     # Not in use yet
-    msl = 0.9
+    msl = args.msl
+    #blast_cutoff = args.blastc
        
     # Create miRNA objects from the list of input miRNAs.
-    mirna_dict = mirna_maker(mirnas, models, output)
+    mirna_dict = mirna_maker(mirnas, models, output, msl)
 
     # Identify ortholog candidates.
     for mir_data in mirna_dict:
@@ -345,6 +348,8 @@ def main():
         cms_output = '{0}/cmsearch_{1}.out'.format(outdir, mirna_id)
         # Calculate the bit score cutoff.
         cut_off = mirna.bit*cm_cutoff
+        # Calculate the length cutoff.
+        len_cut = len(mirna.pre)*msl
         # Perform covariance model search.
         # Report and inclusion thresholds set according to cutoff.
         cms_command = (
@@ -353,7 +358,7 @@ def main():
             .format(cpu, cms_output, models, mirna_id, query, cut_off)
         )
         sp.call(cms_command, shell=True)
-        cm_results = cmsearch_parser(cms_output, cut_off, mirna_id)
+        cm_results = cmsearch_parser(cms_output, cut_off, len_cut, mirna_id)
         
         # Extract sequences for candidate hits (if any were found).
         if not cm_results:
@@ -377,7 +382,7 @@ def main():
             print('# Evaluating candidates.\n')        
         
         # Perform reverse BLAST test to verify candidates, stored in
-        # a dictionary (accepted_hits).
+        # a list (accepted_hits).
         accepted_hits = {}
     
         for candidate in candidates:
