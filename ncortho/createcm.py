@@ -1,5 +1,8 @@
 # Construct and calibrate a covariance model for a given ncRNA core set
 # alignment in Stockholm format.
+# The calibration step is computationally very expensive and should be
+# performed on multiple CPU cores.
+# TODO: Include license, author etc.
 
 import argparse
 import multiprocessing as mp
@@ -7,7 +10,6 @@ import os
 import subprocess as sp
 import sys
 
-###############################################################################
 
 class CmConstructor(object):
     
@@ -30,6 +32,10 @@ class CmConstructor(object):
             .format(cmbuild, self.name, self.outpath, self.alignment)
         )
         sp.call(construct_command, shell=True)
+        print(
+            '# Writing log file to {}/{}_cmbuild.log'
+            .format(self.outpath, self.name)
+        )
         print('# Finished covariance model construction.')
     
     def calibrate(self):
@@ -45,7 +51,6 @@ class CmConstructor(object):
         sp.call(calibrate_command, shell=True)
         print('# Finished covariance model calibration.')
 
-###############################################################################
 
 def main():
 
@@ -53,18 +58,18 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python createcm.py', description='covariance model construction'
     )
-    # cpu, use maximum number of available cpus unless specified otherwise
+    # "cpu", use maximum number of available CPUs unless specified otherwise.
     parser.add_argument(
         '-c', '--cpu', metavar='int', type=int,
         help='number of CPU cores to use', nargs='?',
         const=mp.cpu_count(), default=mp.cpu_count()
     )
-    # output folder
+    # Path to the desired output folder.
     parser.add_argument(
         '-o', '--output', metavar='<path>', type=str,
         help='path to the output folder'
     )
-    # query genome
+    # Path to the query genome.
     parser.add_argument(
         '-a', '--alignment', metavar='<.sto>', type=str,
         help='path to input alignment'
@@ -106,10 +111,14 @@ def main():
     if not os.path.isdir(output):
         mkdir_cmd = 'mkdir {}'.format(output)
         sp.call(mkdir_cmd, shell=True)
-    
+
+    # Initiate covariance model construction and calibration.
     cmc = CmConstructor(alignment, output, name, cpu)
+    # Construct the model.
     cmc.construct()
+    # Calibrate the model.
     cmc.calibrate()
+
 
 if __name__ == '__main__':
     main()

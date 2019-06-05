@@ -618,13 +618,17 @@ def main():
                     )
                     print('#########################')
 # Test to see if the two orthologs are themselves neighbors where their
-# distance cannot be larger than the selected mgi value
+# distance cannot be larger than the selected mgi value. This accounts
+# for insertions in the core species.
+# TODO: Apply mgi also to the reference species to account for insertions
+# in the reference.
                     if (
                         left_data[0] == right_data[0]
                         and abs(left_data[1] - right_data[1]) <= mgi
                     ):
 # Determine which sequence to include for the synteny-based ortholog search
-# depending on the order of orthologs
+# depending on the order of orthologs. The order of the orthologs in the core
+# species might be inverted compared to that in the reference species.
 ###############################################################################
                         if left_data[1] < right_data[1]:
                             print('left')
@@ -691,7 +695,7 @@ def main():
 
     #fasta_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/test_fasta'
     #blastsearch(mirna_path, fasta_path, ref_genome, output, cpu)
-    #blastsearch(mirna_path, ref_genome, output, cpu)
+    blastsearch(mirna_path, ref_genome, output, cpu)
 
 if __name__ == '__main__':
     main()
