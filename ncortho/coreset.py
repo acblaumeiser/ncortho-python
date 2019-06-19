@@ -9,12 +9,10 @@
 #core set taxa: genome, gtf file, pairwise orthologs
 
 import argparse
-#import blastsearch
 import glob
 import multiprocessing as mp
 import os
 import pickle
-#import genparser
 import pyfaidx
 import subprocess as sp
 import sys
@@ -118,7 +116,7 @@ def blastsearch(m_path, r_path, o_path, c):
         ref_results, err = ref_bit_cmd.communicate(preseq)
         #print(ref_results)
         ref_bit_score = float(ref_results.split('\n')[0].split('\t')[0])
-        #print(ref_bit_score)
+        print(ref_bit_score)
         # End of reference bit score computation.
         print('Performing reciprocal BLAST search.')
         # 
@@ -399,13 +397,13 @@ def main():
 #        orthologs = {ref: core for (ref, core) in
 #[(line.split()[0], line.split()[1]) for line in omafile.readlines()
 #if len(line.split()) == 4]}
+            oma_lines = omafile.readlines()
             orthologs = {
                 ref: core for (ref, core) in [
                     (line.split()[0], line.split()[1])
-                    for line in omafile.readlines()
+                    for line in oma_lines
                 ]
             }
-
             ortho_dict[taxon] = orthologs
 
 #Read in the miRNA data
@@ -414,7 +412,6 @@ def main():
             line.split() for line in mirfile.readlines()
             if not line.startswith('#')
         ]
-
     ref_dict = gtf_parser(ref_gtf_path)
 
 #Determine the position of each miRNA and its neighboring gene(s)
@@ -576,7 +573,7 @@ def main():
         print('Starting synteny analysis for {}'.format(taxon))
         gtf_path = '{0}/{1}.gtf'.format(core_gtf_paths, taxon)
         fasta_path = glob.glob('{0}/{1}*.fa'.format(core_fa_paths, taxon))
-        #print(fasta_path)
+        #print(gtf_path)
         #print(fasta_path)
         if len(fasta_path) != 1:
             print('Unable to identify genome file for {}'.format(taxon))
@@ -585,6 +582,7 @@ def main():
         print('Trying to parse GTF file for {}.'.format(taxon))
         try:
             core_gtf_dict = gtf_parser(gtf_path)
+            print('YOU MADE IT THIS FAR.')
             for mirna in neighbor_dict[taxon]:
                 print(mirna)
                 style = neighbor_dict[taxon][mirna][0]
@@ -677,7 +675,7 @@ def main():
                         print(left_data)
                         print(right_data)
         except:
-        #print('No GTF file found for {}'.format(taxon))
+            print('No GTF file found for {}'.format(taxon))
             continue
     #print(mirna_dict.keys())
     #print(mirna_dict['mmu-mir-1224'])

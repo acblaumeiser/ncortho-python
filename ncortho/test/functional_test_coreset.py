@@ -2,15 +2,13 @@ import subprocess as sp
 
 def main():
 
-    #/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/ncortho-python/ncortho/coreset.py
     #script = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/coreset.py'
     script = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/ncortho-python/ncortho/coreset.py'
     ref_gtf_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/ref_gtf'
     core_gtf_paths = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/core'
     core_fa_paths = '/share/project/andreas/miRNA_project/mouse_core_genomes'
-    #mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/example/micrornas/mmu_mirna_hairpin_high_confidence.tsv'
-    mirna_path = '/home/andreas/Documents/Internship/mouse_project/micrornas/mmu_mirna_hairpin_high_confidence.tsv'
-    #mirna_path = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/mirnas/test_mirnas.txt'
+    #mirna_path = '/home/andreas/Documents/Internship/mouse_project/micrornas/mmu_mirna_hairpin_high_confidence.tsv'
+    mirna_path = '/home/andreas/Documents/Internship/mouse_project/micrornas/test_set.tsv'
     ref_gtf_path = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/gtf/Mus_musculus.chromosomes.gtf'
     ref_fa_path = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
     oma_paths = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_core_set_construction/oma'

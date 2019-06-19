@@ -78,7 +78,7 @@ def main():
     
     gtf = args.gtf
     mat = args.mature
-    out = args.out
+    out = args.output
     pre = args.pre
     
     #Pre-computations
