@@ -1,7 +1,7 @@
-'''
-# Re-implementation of ncOrtho in Python
+"""
+Re-implementation of ncOrtho in Python
 # TODO: include license, author information etc
-'''
+"""
 
 # Modules import
 
@@ -42,13 +42,28 @@ class Mirna(object):
 # TODO: include both mature strands, 5p and 3p, aka mature and star
 
 
-# mirna_maker: Parses the miRNA data input file and returns a
-#              dictionary of Mirna objects.
-# Arguments:
-# mirpath: path to file with microRNA data
-# cmpath: path to covariance models
-# output: path for writing temporary files
+
 def mirna_maker(mirpath, cmpath, output, msl):
+    """
+    Parses the miRNA data input file and returns a dictionary of Mirna objects.
+
+    Parameters
+    ----------
+    mirpath : STR
+        Path to file with microRNA data.
+    cmpath : STR
+        Path to covariance models.
+    output : STR
+        Path for writing temporary files.
+    msl : FLOAT
+        Length filter.
+
+    Returns
+    -------
+    mmdict : DICT
+        Dictionary with Mirna objects.
+
+    """
     
     mmdict = {} # will be the return object
     
@@ -86,7 +101,7 @@ def mirna_maker(mirpath, cmpath, output, msl):
             continue
         
         # Create a temporary FASTA file with the miRNA sequence as
-        # query for external search tool cmsearch to calculate
+        # query for external search tool cmsearch to calculate the
         # reference bit score.
         with open(query, 'w') as tmpfile:
             tmpfile.write('>{0}\n{1}'.format(mirid, seq))
@@ -136,6 +151,27 @@ def mirna_maker(mirpath, cmpath, output, msl):
 # lc: length cutoff
 # mirid: name/id of the microRNA
 def cmsearch_parser(cms, cmc, lc, mirid):
+    """
+    Parse the output of cmsearch while eliminating duplicates and filtering 
+    entries according to the defined cutoff.
+
+    Parameters
+    ----------
+    cms : TYPE
+        DESCRIPTION.
+    cmc : TYPE
+        DESCRIPTION.
+    lc : TYPE
+        DESCRIPTION.
+    mirid : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    hits_dict : TYPE
+        DESCRIPTION.
+
+    """
     # Output
     hits_dict = {}
     # Required for finding duplicates, stores hits per chromosome
@@ -214,6 +250,25 @@ def cmsearch_parser(cms, cmc, lc, mirid):
 # o: output name
 # c: number of threads
 def blast_search(s, r, o, c):
+    """
+    
+
+    Parameters
+    ----------
+    s : TYPE
+        DESCRIPTION.
+    r : TYPE
+        DESCRIPTION.
+    o : TYPE
+        DESCRIPTION.
+    c : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     # Check if BLAST database already exists, otherwise create it.
     # Database files are ".nhr", ".nin", ".nsq".
     file_extensions = ['.nhr', '.nin', '.nsq']
@@ -237,6 +292,21 @@ def blast_search(s, r, o, c):
 # a: dictionary of accepted hits
 # o: path for output
 def write_output(a, o):
+    """
+    
+
+    Parameters
+    ----------
+    a : TYPE
+        DESCRIPTION.
+    o : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     with open(o, 'w') as outfile:
         for hit in a:
             outfile.write('>{0}\n{1}\n'.format(hit, a[hit]))

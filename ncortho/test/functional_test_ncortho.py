@@ -1,13 +1,13 @@
 import subprocess as sp
 
 def main():
+    ncortho = '/media/andreas/Data/ncOrtho/ncortho-python/ncortho/ncortho.py'
+    mirnas = '/media/andreas/Data/ncOrtho/sample_data/micrornas/mmu-mir-669a-1.txt'
+    models = '/media/andreas/Data/ncOrtho/sample_data/covariance_models'
+    output = '/media/andreas/Data/ncOrtho/sample_data/output'
+    query = '/media/andreas/Data/ncOrtho/sample_data/genomes/pseudo_genome_for_testing_purposes/pseudo_genome_positive.fa'
+    reference = '/media/andreas/Data/ncOrtho/sample_data/genomes/genome/Mus_musculus.chromosomes.fa'
     cpu = 4
-    mirnas = '/home/andreas/Documents/Internship/mouse_project/_ortholog_searches/_zebrafish/mir-574.tsv'
-    models = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/test_ncortho_search/models'
-    ncortho = '/home/andreas/Documents/Internship/ncOrtho_to_distribute/ncortho_python/ncortho-python/ncortho/ncortho.py'
-    output = '/home/andreas/Documents/Internship/mouse_project/_ortholog_searches/_zebrafish/test'
-    query = '/home/andreas/Documents/Internship/mouse_project/_ortholog_searches/_zebrafish/pseudo_genome.fa'
-    reference = '/home/andreas/Documents/Internship/M.musculus_root/cm_retry/root/genome/Mus_musculus.chromosomes.fa'
     cutoff = '0.6'
 
     #nc_command = 'python {}'.format(ncortho)
